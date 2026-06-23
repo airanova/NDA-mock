@@ -137,7 +137,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .option-status-badge{margin-left:auto;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0}
 .option-status-badge.correct{background:var(--success-glow);color:var(--success);border:1px solid var(--success)}
 .option-status-badge.wrong{background:var(--danger-glow);color:var(--danger);border:1px solid var(--danger)}
-.option-text{flex:1;word-break:break-word}
 
 /* ===== HINT ===== */
 .hint-section{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
@@ -191,7 +190,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .mini-stat.u .v{color:var(--text-muted)}
 .mini-stat.a .v{color:var(--accent)}
 .status-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-.status-item{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--text-muted);border:1.5px solid var(--border);transition:var(--transition);position:relative}
+.status-item{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--text-muted);border:1.5px solid var(--border);transition:var(--transition)}
 .status-item:hover{transform:scale(1.1);border-color:var(--accent);color:var(--accent)}
 .status-item.current{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);box-shadow:0 0 10px var(--accent-glow)}
 .status-item.answered{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
@@ -457,8 +456,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
         <div class="score-lbl">Marks</div>
       </div>
       <div class="mini-stats">
-        <div class="mini-stat c"><div class="v" id="msC">0</div><div class="l">Correct</div></div>
-        <div class="mini-stat w"><div class="v" id="msW">0</div><div class="l">Wrong</div></div>
+        <div class="mini-stat c"><div class="v" id="msC">-</div><div class="l">Correct</div></div>
+        <div class="mini-stat w"><div class="v" id="msW">-</div><div class="l">Wrong</div></div>
         <div class="mini-stat u"><div class="v" id="msU">0</div><div class="l">Skip</div></div>
         <div class="mini-stat a"><div class="v" id="msA">0</div><div class="l">Attempt</div></div>
       </div>
@@ -543,19 +542,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   </div>
 </div>
 
-<!-- RESUME DIALOG -->
-<div class="confirm-overlay" id="resumeBox" style="z-index:3000">
-  <div class="confirm-box">
-    <h3 id="rTitle">Resume Test?</h3>
-    <p id="rMsg">You have an incomplete test.</p>
-    <div class="confirm-btns">
-      <button class="confirm-yes" id="rYes" style="background:var(--success);box-shadow:0 4px 15px var(--success-glow)">Resume</button>
-      <button class="confirm-no" id="rNo">Discard</button>
-    </div>
-  </div>
-</div>
-
 <script>
+
 
 // ===== UTILS =====
 function $(id){ return document.getElementById(id); }
@@ -584,6 +572,7 @@ function loadTheme(){
     var t=localStorage.getItem('nda_theme'); 
     if(t){ currentTheme=t; document.documentElement.setAttribute('data-theme', t); }
     else{
+      // Auto-detect OS theme preference
       if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches){
         currentTheme='light';
         document.documentElement.setAttribute('data-theme', 'light');
@@ -594,16 +583,16 @@ function loadTheme(){
 }
 
 // ===== STORAGE =====
-var TESTS_KEY='nda_pro_tests_v5';
-var SETTINGS_KEY='nda_pro_settings_v5';
-var PROGRESS_KEY='nda_pro_progress_v5';
+var TESTS_KEY='nda_pro_tests_v4';
+var SETTINGS_KEY='nda_pro_settings_v4';
+var PROGRESS_KEY='nda_pro_progress_v4';
 var activeTab='create';
 var paper='math';
 var test=null;
 var qIdx=0;
 var answers=[];
-var flags=[];
-var qTimes=[];
+var flags=[]; // flagged questions for review
+var qTimes=[]; // per-question time tracking
 var qTimer=null, tTimer=null;
 var qTime=0, tTime=0;
 var panelOpen=false;
@@ -613,8 +602,7 @@ var startTime=0;
 var cBack=null;
 var calcExpr='';
 var warned5=false, warned1=false;
-var editingTestId=null;
-var autoSaveInterval=null;
+var editingTestId=null; // track which test is being edited
 
 var NDA={
   math:{q:120, marks:2.5, neg:0.83, total:300},
@@ -689,6 +677,7 @@ function validateTest(qs, ans, name){
   if(!name.trim()){ showValidation('Test name is required!','err'); return false; }
   if(qs.length===0){ showValidation('No valid questions found!','err'); return false; }
 
+  // Check for duplicate question numbers
   var seenNums={};
   var hasDup=false;
   for(var i=0;i<qs.length;i++){
@@ -697,6 +686,7 @@ function validateTest(qs, ans, name){
   }
   if(hasDup){ showValidation('Duplicate question numbers detected!','warn'); }
 
+  // Check option count
   var lowOpt=0;
   for(var i=0;i<qs.length;i++){
     if(qs[i].opts.length<4) lowOpt++;
@@ -704,12 +694,14 @@ function validateTest(qs, ans, name){
   }
   if(lowOpt>0){ showValidation(lowOpt+' question(s) have fewer than 4 options.','warn'); }
 
+  // Check empty answers
   var emptyAns=0;
   for(var i=0;i<qs.length;i++){
     if(!qs[i].ans || qs[i].ans==='') emptyAns++;
   }
   if(emptyAns>0){ showValidation(emptyAns+' question(s) have no correct answer.','warn'); }
 
+  // Check paper standards
   var expectedQ = paper==='math'?120:150;
   if(qs.length!==expectedQ){
     showValidation('Expected '+expectedQ+' questions for '+paper.toUpperCase()+' but found '+qs.length+'.','warn');
@@ -719,10 +711,12 @@ function validateTest(qs, ans, name){
 }
 
 // ===== NDA PREMIUM PARSER =====
+// FIX #5, #23, #24: Handles Statement questions, Roman numerals, Assertion-Reason, Match, Tables
 function parseQuestions(text){
   var qs=[];
   var lines=text.split('\n');
 
+  // Step 1: Split by question boundaries using Q1, Q2, 1., 2. pattern
   var questionBlocks=[];
   var currentBlock=[];
 
@@ -731,9 +725,12 @@ function parseQuestions(text){
     var trimmed=line.trim();
     if(!trimmed) continue;
 
+    // Check if this line starts a new question
+    // Patterns: Q1., Q2:, 1., 2:, Question 1, etc.
     var isQStart = /^(?:Q?\s*(\d+)[\.:\s]+|Question\s+(\d+)[\.:\s]+|^\d+[\.:\s]+)(.+)/i.test(trimmed);
 
     if(isQStart && currentBlock.length>0){
+      // Previous block complete, save it
       questionBlocks.push(currentBlock);
       currentBlock=[line];
     } else {
@@ -742,6 +739,7 @@ function parseQuestions(text){
   }
   if(currentBlock.length>0) questionBlocks.push(currentBlock);
 
+  // Step 2: Parse each block
   for(var b=0;b<questionBlocks.length;b++){
     var block=questionBlocks[b];
     var qNum=null, qText='';
@@ -754,6 +752,7 @@ function parseQuestions(text){
       var trimmed=line.trim();
       if(!trimmed) continue;
 
+      // Extract question number from first line
       if(i===0){
         var qm=trimmed.match(/^(?:Q?\s*(\d+)[\.:\s]+|Question\s+(\d+)[\.:\s]+|^\d+[\.:\s]+)(.+)/i);
         if(qm){
@@ -765,16 +764,20 @@ function parseQuestions(text){
         continue;
       }
 
+      // Check for option start: A), B), C), D) or A., B., C., D.
       var om=trimmed.match(/^([A-D])[\.\)\s]+\s*(.*)/i);
 
       if(om){
         inOpts=true;
         opts.push({let:om[1].toUpperCase(), txt:om[2].trim()});
       } else if(inOpts){
+        // FIX #24: Multi-line option support - append to last option
         if(opts.length>0){
           opts[opts.length-1].txt+=' ' + trimmed;
         }
       } else {
+        // Still in question body
+        // Roman numerals, numbered statements, Assertion, Reason, Tables are all question body
         qTextLines.push(trimmed);
       }
     }
@@ -788,12 +791,14 @@ function parseQuestions(text){
     }
   }
 
+  // Sort by question number and re-index
   qs.sort(function(a,b){ return a.num-b.num; });
   for(var i=0;i<qs.length;i++){ qs[i].num=i+1; }
 
   return qs;
 }
 
+// FIX #9: Multiple correct answers support (e.g., "A,C" or "AC")
 function parseAnswers(text, count){
   var ans=[];
   var lines=text.split('\n');
@@ -801,11 +806,12 @@ function parseAnswers(text, count){
   for(var i=0;i<lines.length;i++){
     var line=lines[i].trim();
     if(!line) continue;
+    // Support: 1-A,C or 1-AC or just A or just AC
     var m=line.match(/^(\d+)[\.:\-\s]*([A-D](?:[,\s]*[A-D])*)$/i);
     if(m){
       var qNum=parseInt(m[1]);
       var cleanAns=m[2].toUpperCase().replace(/[,\s]/g,'');
-      ans[qNum-1]=cleanAns;
+      ans[qNum-1]=cleanAns; // e.g., "AC" for A and C
     } else if(/^[A-D](?:[,\s]*[A-D])*$/i.test(line)){
       var cleanAns=line.toUpperCase().replace(/[,\s]/g,'');
       ans[idx]=cleanAns;
@@ -862,6 +868,7 @@ function saveTest(){
   var t=buildTest($('testName').value.trim(), $('questionsInput').value, $('answersInput').value, $('solutionsInput').value);
   if(!t) return;
 
+  // FIX #3, #22: Check for duplicate names and handle edit mode
   var dup=false;
   for(var i=0;i<tests.length;i++){
     if(tests[i].name.toLowerCase()===t.name.toLowerCase() && tests[i].id!==editingTestId){
@@ -870,6 +877,7 @@ function saveTest(){
   }
   if(dup && !editingTestId){ showValidation('A test with this name already exists!','warn'); }
 
+  // If editing, remove the old test first
   if(editingTestId){
     var newTests=[];
     for(var i=0;i<tests.length;i++){
@@ -933,6 +941,7 @@ function loadTest(id){
   for(var i=0;i<tests.length;i++) if(tests[i].id===id){ startTest(tests[i]); return; } 
 }
 
+// FIX #3: Edit test no longer permanently deletes original
 function editTest(id){
   for(var i=0;i<tests.length;i++){
     if(tests[i].id===id){
@@ -957,7 +966,7 @@ function editTest(id){
       var sText='';
       for(var j=0;j<t.qs.length;j++) if(t.qs[j].sol) sText+='Q'+(j+1)+': '+t.qs[j].sol+'\n';
       $('solutionsInput').value=sText.trim();
-      editingTestId=id;
+      editingTestId=id; // Track which test is being edited
       switchTab('create');
       toast('Editing: '+esc(t.name)+'. Click Save to update.');
       return;
@@ -973,17 +982,15 @@ function delTest(id){
   });
 }
 
-// ===== AUTO-SAVE & RESUME SYSTEM =====
+// FIX #26, #27: Auto-save progress and resume support
 function saveProgress(){
   if(!test || reviewMode) return;
   var progress={
     testId:test.id,
-    testData:test,
     qIdx:qIdx,
     answers:answers,
     flags:flags,
     qTimes:qTimes,
-    qTime:qTime,
     tTime:tTime,
     startTime:startTime,
     timestamp:Date.now()
@@ -1003,64 +1010,6 @@ function clearProgress(){
   try{ localStorage.removeItem(PROGRESS_KEY); }catch(e){}
 }
 
-function showResumeDialog(progress){
-  $('rTitle').textContent='Resume Test?';
-  $('rMsg').textContent='You were attempting "'+progress.testData.name+'" (Q'+(progress.qIdx+1)+'/'+progress.testData.qs.length+'). Resume from where you left off?';
-  $('resumeBox').classList.add('show');
-
-  $('rYes').onclick=function(){
-    $('resumeBox').classList.remove('show');
-    restoreProgress(progress);
-  };
-  $('rNo').onclick=function(){
-    $('resumeBox').classList.remove('show');
-    clearProgress();
-  };
-}
-
-function restoreProgress(progress){
-  test=progress.testData;
-  qIdx=progress.qIdx;
-  answers=progress.answers;
-  flags=progress.flags||[];
-  qTimes=progress.qTimes||[];
-  qTime=progress.qTime||test.qTime;
-  tTime=progress.tTime;
-  startTime=progress.startTime;
-  reviewMode=false;
-  warned5=false; warned1=false;
-
-  // Pad arrays if needed
-  while(answers.length<test.qs.length) answers.push('');
-  while(flags.length<test.qs.length) flags.push(false);
-  while(qTimes.length<test.qs.length) qTimes.push(0);
-
-  $('setupScreen').classList.add('hidden');
-  $('resultScreen').classList.remove('show');
-  $('testHeader').style.display='flex';
-  $('mainContainer').style.display='flex';
-  $('navBar').style.display='flex';
-  $('headerName').textContent=test.name;
-  $('headerName').title=test.name;
-  $('headerSubject').textContent=test.paper==='math'?'MATHEMATICS':'GAT';
-  $('qCounterTotal').textContent=test.qs.length;
-  $('timerBox').style.display='flex';
-
-  renderQ(); renderGrid(); startTimers();
-  startAutoSave();
-  toast('&#9989; Test resumed from Q'+(qIdx+1));
-}
-
-function startAutoSave(){
-  if(autoSaveInterval) clearInterval(autoSaveInterval);
-  autoSaveInterval=setInterval(saveProgress, 15000); // save every 15 seconds
-}
-
-function stopAutoSave(){
-  if(autoSaveInterval){ clearInterval(autoSaveInterval); autoSaveInterval=null; }
-}
-
-// ===== START TEST =====
 function startTest(t){
   test=t; qIdx=0; answers=[]; flags=[]; qTimes=[];
   for(var i=0;i<t.qs.length;i++){ answers.push(''); flags.push(false); qTimes.push(0); }
@@ -1074,19 +1023,21 @@ function startTest(t){
   $('mainContainer').style.display='flex';
   $('navBar').style.display='flex';
   $('headerName').textContent=t.name;
-  $('headerName').title=t.name;
+  $('headerName').title=t.name; // tooltip for long names
   $('headerSubject').textContent=t.paper==='math'?'MATHEMATICS':'GAT';
   $('qCounterTotal').textContent=t.qs.length;
+
+  // FIX #11: Hide timers in review mode (initially test mode, so show)
   $('timerBox').style.display='flex';
 
   renderQ(); renderGrid(); startTimers();
-  startAutoSave();
+
+  // Auto-save interval
+  setInterval(saveProgress, 30000); // save every 30 seconds
 }
 
-// ===== INSTANT FEEDBACK SYSTEM =====
-// When user clicks an option, immediately show green (correct) or red (wrong)
-// AND update the right panel status grid instantly
-
+// FIX #2: Question timer no longer resets on every Next/Prev
+// FIX #29: Question flagging support
 function renderQ(){
   var q=test.qs[qIdx];
   var area=$('questionArea');
@@ -1101,30 +1052,21 @@ function renderQ(){
     var cls='option';
     var badge='';
 
-    // INSTANT FEEDBACK: Check if this option is correct or wrong immediately
-    var isCorrectAns = q.ans.indexOf(o.let)>=0;
-    var isUserSelected = userAns && userAns.indexOf(o.let)>=0;
-
     if(isReview){
+      // FIX #9: Check if answer contains the option letter (multi-answer support)
+      var isCorrectAns = q.ans.indexOf(o.let)>=0;
+      var isUserWrong = userAns && userAns.indexOf(o.let)>=0 && !isCorrectAns;
+
       if(isCorrectAns){ 
         cls+=' correct'; 
         badge='<span class="option-status-badge correct">&#10004; Correct</span>'; 
       }
-      else if(isUserSelected && !isCorrectAns){ 
+      else if(isUserWrong){ 
         cls+=' wrong'; 
         badge='<span class="option-status-badge wrong">&#10008; Wrong</span>'; 
       }
     } else {
-      // TEST MODE: Instant feedback!
-      if(isUserSelected){
-        if(isCorrectAns){
-          cls+=' correct';
-          badge='<span class="option-status-badge correct">&#10004; Correct</span>';
-        } else {
-          cls+=' wrong';
-          badge='<span class="option-status-badge wrong">&#10008; Wrong</span>';
-        }
-      }
+      if(userAns && userAns.indexOf(o.let)>=0){ cls+=' selected'; }
     }
 
     optsHtml+='<div class="'+cls+'" onclick="pickOpt(\''+o.let+'\')">'+
@@ -1153,6 +1095,7 @@ function renderQ(){
   $('qCounterCurrent').textContent=qIdx+1;
   $('prevBtn').disabled=(qIdx===0);
 
+  // FIX #12: Review mode gets "End Review" button, test mode gets "Finish"
   if(isReview){
     $('nextBtn').innerHTML=(qIdx===test.qs.length-1)?'End Review &#10003;':'Next &#8594;';
     $('nextBtn').className=(qIdx===test.qs.length-1)?'nav-btn review-finish':'nav-btn primary';
@@ -1161,14 +1104,15 @@ function renderQ(){
     $('nextBtn').className=(qIdx===test.qs.length-1)?'nav-btn finish':'nav-btn primary';
   }
 
+  // Update flag button
   $('flagBtn').classList.toggle('flagged', isFlagged);
 
-  updateGrid(); // Update panel with correct/wrong counts
+  updateGrid();
 }
 
+// FIX #9: Toggle multi-select for answers
 function pickOpt(letter){
   if(reviewMode) return;
-
   // Toggle selection
   if(answers[qIdx].indexOf(letter)>=0){
     answers[qIdx]=answers[qIdx].replace(letter,'');
@@ -1178,18 +1122,16 @@ function pickOpt(letter){
   // Sort letters
   var sorted=answers[qIdx].split('').sort().join('');
   answers[qIdx]=sorted;
-
-  renderQ(); // Re-render to show instant green/red feedback
-  updateGrid(); // Update panel
-  saveProgress(); // Auto-save after each answer
+  renderQ();
+  updateGrid();
 }
 
+// FIX #29: Toggle flag
 function toggleFlag(){
   flags[qIdx]=!flags[qIdx];
   $('flagBtn').classList.toggle('flagged', flags[qIdx]);
   updateGrid();
   renderFlagList();
-  saveProgress();
 }
 
 function renderFlagList(){
@@ -1223,6 +1165,7 @@ function nextQ(){
   if(qIdx<test.qs.length-1){ qIdx++; renderQ(); } 
   else { 
     if(reviewMode){
+      // End review - go home
       goHome();
     } else {
       submitTest(); 
@@ -1265,26 +1208,34 @@ function updateGrid(){
     var ans=answers[i];
     var qAns=test.qs[i].ans;
 
-    if(ans){
-      if(ans===qAns){ 
-        el.classList.add('correct'); 
-        c++; marks+=test.marks; 
-      }
-      else { 
-        el.classList.add('wrong'); 
-        w++; marks-=test.neg; 
-      }
+    if(reviewMode){
+      // FIX #9: Check if user's answer matches correct answer
+      var isCorrect = ans && ans===qAns;
+      var isWrong = ans && ans!==qAns;
+
+      if(isCorrect){ el.classList.add('correct'); c++; marks+=test.marks; }
+      else if(isWrong){ el.classList.add('wrong'); w++; marks-=test.neg; }
+      else { u++; }
     } else {
-      u++;
+      if(ans){ el.classList.add('answered'); }
+      else { u++; }
+      // Live score calculation
+      if(ans===qAns) marks+=test.marks;
+      else if(ans) marks-=test.neg;
     }
   }
 
-  $('scoreVal').textContent=marks.toFixed(2);
-  $('msC').textContent=c; 
-  $('msW').textContent=w;
-  $('msU').textContent=u; 
-  $('msA').textContent=(c+w);
-
+  if(reviewMode){
+    $('scoreVal').textContent=marks.toFixed(2);
+    $('msC').textContent=c; $('msW').textContent=w;
+    $('msU').textContent=u; $('msA').textContent=(c+w);
+  } else {
+    $('scoreVal').textContent=marks.toFixed(2);
+    var att=0;
+    for(var i=0;i<answers.length;i++) if(answers[i]) att++;
+    $('msC').textContent='-'; $('msW').textContent='-';
+    $('msU').textContent=(test.qs.length-att); $('msA').textContent=att;
+  }
   updateProgress();
 }
 
@@ -1298,7 +1249,7 @@ function startTimers(){
   qTimer=setInterval(function(){
     if(!reviewMode){
       qTime--;
-      qTimes[qIdx]++;
+      qTimes[qIdx]++; // Track time per question
       if(qTime<=0){ qTime=test.qTime; }
       updateTimers();
     }
@@ -1306,7 +1257,7 @@ function startTimers(){
   tTimer=setInterval(function(){
     if(!reviewMode){
       tTime--; 
-      if(tTime<=0){ stopTimers(); stopAutoSave(); submitTest(); return; }
+      if(tTime<=0){ stopTimers(); submitTest(); return; }
       updateTimers();
     }
   },1000);
@@ -1344,8 +1295,10 @@ function updateTimers(){
 function toggleCalc(){
   $('calcOverlay').classList.toggle('show');
 }
+
+// FIX #16, #17, #18: Safer calculator with division by zero and large number handling
 function calcInput(val){
-  if(calcExpr.length>50) return;
+  if(calcExpr.length>50) return; // limit input length
   calcExpr+=val;
   $('calcDisplay').textContent=calcExpr||'0';
 }
@@ -1361,17 +1314,23 @@ function calcEquals(){
   try{
     var clean=calcExpr.replace(/[^0-9+\-*/().\s]/g,'');
     if(!clean){ $('calcDisplay').textContent='Error'; calcExpr=''; return; }
+
+    // Check for division by zero
     if(/\/\s*0/.test(clean)){
       $('calcDisplay').textContent='Undefined';
       calcExpr='';
       return;
     }
+
     var res=Function('"use strict"; return ('+clean+')')();
+
+    // Handle Infinity and NaN
     if(!isFinite(res) || isNaN(res)){ 
       $('calcDisplay').textContent='Error'; 
       calcExpr=''; 
       return; 
     }
+
     var str=String(res);
     if(str.length>16) str=parseFloat(res).toExponential(6);
     $('calcDisplay').textContent=str;
@@ -1384,7 +1343,6 @@ function calcEquals(){
 
 function submitTest(){
   stopTimers();
-  stopAutoSave();
   clearProgress();
   $('warningOverlay').classList.remove('show');
   var taken=Math.floor((Date.now()-startTime)/1000);
@@ -1414,12 +1372,14 @@ function submitTest(){
   $('rSpeed').textContent=speed+' q/min';
   $('rTime').textContent=fmtHMS(taken);
 
+  // FIX #4: Handle negative score circle degrees
   var scoreDeg=0;
   if(net>0){
     scoreDeg=Math.min((net/test.total)*360, 360);
   }
   $('scoreCircle').style.setProperty('--score-deg', scoreDeg+'deg');
 
+  // FIX #15: Add grade calculation
   var grade='F';
   var pctNum=parseFloat(pct);
   if(pctNum>=90) grade='S';
@@ -1443,16 +1403,15 @@ function reviewTest(){
   $('mainContainer').style.display='flex';
   $('navBar').style.display='flex';
   $('headerName').textContent=test.name+' - REVIEW';
+
+  // FIX #11: Hide timers in review mode
   $('timerBox').style.display='none';
 
   renderQ(); updateGrid();
 }
 
 function goHome(){
-  stopTimers(); 
-  stopAutoSave();
-  reviewMode=false; 
-  test=null;
+  stopTimers(); reviewMode=false; test=null;
   $('warningOverlay').classList.remove('show');
   $('resultScreen').classList.remove('show');
   $('testHeader').style.display='none';
@@ -1463,6 +1422,7 @@ function goHome(){
   switchTab('saved');
 }
 
+// FIX #19: Enhanced export with more formats
 function downloadResult(){
   var taken=Math.floor((Date.now()-startTime)/1000);
   var c=0,w=0,u=0, pos=0, neg=0;
@@ -1476,7 +1436,7 @@ function downloadResult(){
   var acc=(c+w)>0?((c/(c+w))*100).toFixed(1):0;
 
   var result={
-    app:'NDA Pro Ultimate v5.0',
+    app:'NDA Pro Ultimate v4.0',
     exportedAt:new Date().toISOString(),
     testName:test.name,
     subject:test.subject,
@@ -1526,11 +1486,15 @@ function showConfirm(title,msg,cb){
 }
 function hideConfirm(){ $('confirmBox').classList.remove('show'); cBack=null; }
 
-// Keyboard shortcuts
+// Enhanced keyboard shortcuts
+// FIX: Support multi-select with keyboard
+var keyMap={};
 document.addEventListener('keydown',function(e){
   if(!test || !$('setupScreen').classList.contains('hidden')) return;
 
+  // Prevent default for our shortcuts
   if(['ArrowRight','ArrowLeft','1','2','3','4','f','F','Escape'].indexOf(e.key)>=0){
+    // Don't prevent if typing in calculator
     if($('calcOverlay').classList.contains('show')) return;
     e.preventDefault();
   }
@@ -1545,25 +1509,46 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape') toggleCalc();
 });
 
-// ===== ON LOAD: Check for resume =====
+// FIX #28: Auto-detect OS theme on load
 window.onload=function(){ 
   loadTheme();
   loadStore();
   loadSettingsStore();
   selectPaper('math'); 
 
-  // Check for resumable progress
+  // Check for resumeable progress
   var progress=loadProgress();
-  if(progress && progress.testData){
-    // Check if test still exists or was a quick test
-    var testExists=false;
+  if(progress && progress.testId){
+    // Find the test
     for(var i=0;i<tests.length;i++){
-      if(tests[i].id===progress.testId){ testExists=true; break; }
+      if(tests[i].id===progress.testId){
+        showConfirm('Resume Test?','You have an incomplete test: '+tests[i].name+'. Resume from where you left off?',function(){
+          test=tests[i];
+          qIdx=progress.qIdx;
+          answers=progress.answers;
+          flags=progress.flags||[];
+          qTimes=progress.qTimes||[];
+          tTime=progress.tTime;
+          startTime=progress.startTime;
+          reviewMode=false;
+          warned5=false; warned1=false;
+
+          $('setupScreen').classList.add('hidden');
+          $('testHeader').style.display='flex';
+          $('mainContainer').style.display='flex';
+          $('navBar').style.display='flex';
+          $('headerName').textContent=test.name;
+          $('headerName').title=test.name;
+          $('headerSubject').textContent=test.paper==='math'?'MATHEMATICS':'GAT';
+          $('qCounterTotal').textContent=test.qs.length;
+          $('timerBox').style.display='flex';
+
+          renderQ(); renderGrid(); startTimers();
+          setInterval(saveProgress, 30000);
+        });
+        break;
+      }
     }
-    // Show resume dialog
-    setTimeout(function(){
-      showResumeDialog(progress);
-    }, 500);
   }
 };
 </script>
