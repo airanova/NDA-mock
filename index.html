@@ -122,7 +122,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .q-badge .q-num{font-size:16px}
 .q-badge .q-total{color:var(--text-muted);font-size:12px}
 .q-subject{background:var(--danger-glow);color:var(--danger);padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid var(--danger);letter-spacing:0.5px}
-.question-text{font-size:17px;line-height:1.7;margin-bottom:24px;color:var(--text);font-weight:500;letter-spacing:0.2px;word-wrap:break-word}
+.question-text{font-size:17px;line-height:1.7;margin-bottom:24px;color:var(--text);font-weight:500;letter-spacing:0.2px;word-wrap:break-word;white-space:pre-wrap}
 .options-container{display:flex;flex-direction:column;gap:12px}
 .option{background:var(--bg);border:1.5px solid var(--border);padding:16px 18px;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;gap:14px;font-size:15px;transition:var(--transition);position:relative;word-wrap:break-word}
 .option:hover{border-color:var(--accent);background:var(--accent-glow);transform:translateX(4px);box-shadow:0 4px 12px var(--accent-glow)}
@@ -137,6 +137,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .option-status-badge{margin-left:auto;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0}
 .option-status-badge.correct{background:var(--success-glow);color:var(--success);border:1px solid var(--success)}
 .option-status-badge.wrong{background:var(--danger-glow);color:var(--danger);border:1px solid var(--danger)}
+.option-text{flex:1;word-break:break-word}
 
 /* ===== HINT ===== */
 .hint-section{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
@@ -147,7 +148,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 .solution-label{color:var(--success);font-size:11px;font-weight:700;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
 .solution-ans{color:var(--accent);font-size:14px;font-weight:700;margin-bottom:12px;padding:8px 12px;background:var(--accent-glow);border-radius:8px;display:inline-block}
-.solution-text{font-size:14px;line-height:1.8;color:var(--text-muted);word-wrap:break-word}
+.solution-text{font-size:14px;line-height:1.8;color:var(--text-muted);word-wrap:break-word;white-space:pre-wrap}
 
 /* ===== NAV BAR ===== */
 .nav-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg-elevated);border-top:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:90;height:60px;box-shadow:0 -4px 20px rgba(0,0,0,0.2)}
@@ -190,7 +191,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .mini-stat.u .v{color:var(--text-muted)}
 .mini-stat.a .v{color:var(--accent)}
 .status-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-.status-item{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--text-muted);border:1.5px solid var(--border);transition:var(--transition)}
+.status-item{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--text-muted);border:1.5px solid var(--border);transition:var(--transition);position:relative}
 .status-item:hover{transform:scale(1.1);border-color:var(--accent);color:var(--accent)}
 .status-item.current{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);box-shadow:0 0 10px var(--accent-glow)}
 .status-item.answered{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
@@ -456,8 +457,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
         <div class="score-lbl">Marks</div>
       </div>
       <div class="mini-stats">
-        <div class="mini-stat c"><div class="v" id="msC">-</div><div class="l">Correct</div></div>
-        <div class="mini-stat w"><div class="v" id="msW">-</div><div class="l">Wrong</div></div>
+        <div class="mini-stat c"><div class="v" id="msC">0</div><div class="l">Correct</div></div>
+        <div class="mini-stat w"><div class="v" id="msW">0</div><div class="l">Wrong</div></div>
         <div class="mini-stat u"><div class="v" id="msU">0</div><div class="l">Skip</div></div>
         <div class="mini-stat a"><div class="v" id="msA">0</div><div class="l">Attempt</div></div>
       </div>
@@ -542,8 +543,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   </div>
 </div>
 
-<script>
+<!-- RESUME DIALOG -->
+<div class="confirm-overlay" id="resumeBox" style="z-index:3000">
+  <div class="confirm-box">
+    <h3 id="rTitle">Resume Test?</h3>
+    <p id="rMsg">You have an incomplete test.</p>
+    <div class="confirm-btns">
+      <button class="confirm-yes" id="rYes" style="background:var(--success);box-shadow:0 4px 15px var(--success-glow)">Resume</button>
+      <button class="confirm-no" id="rNo">Discard</button>
+    </div>
+  </div>
+</div>
 
+<script>
 
 // ===== UTILS =====
 function $(id){ return document.getElementById(id); }
@@ -552,7 +564,11 @@ function toast(msg, type){
   t.className='toast '+(type||'ok'); t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
-function esc(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+function esc(t){ 
+  var d=document.createElement('div'); 
+  d.textContent=t; 
+  return d.innerHTML; 
+}
 function fmtMMSS(s){ var m=Math.floor(s/60), sec=s%60; return (m<10?'0':'')+m+':'+(sec<10?'0':'')+sec; }
 function fmtHMS(s){ 
   var h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60; 
@@ -572,7 +588,6 @@ function loadTheme(){
     var t=localStorage.getItem('nda_theme'); 
     if(t){ currentTheme=t; document.documentElement.setAttribute('data-theme', t); }
     else{
-      // Auto-detect OS theme preference
       if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches){
         currentTheme='light';
         document.documentElement.setAttribute('data-theme', 'light');
@@ -583,16 +598,16 @@ function loadTheme(){
 }
 
 // ===== STORAGE =====
-var TESTS_KEY='nda_pro_tests_v4';
-var SETTINGS_KEY='nda_pro_settings_v4';
-var PROGRESS_KEY='nda_pro_progress_v4';
+var TESTS_KEY='nda_pro_tests_v6';
+var SETTINGS_KEY='nda_pro_settings_v6';
+var PROGRESS_KEY='nda_pro_progress_v6';
 var activeTab='create';
 var paper='math';
 var test=null;
 var qIdx=0;
 var answers=[];
-var flags=[]; // flagged questions for review
-var qTimes=[]; // per-question time tracking
+var flags=[];
+var qTimes=[];
 var qTimer=null, tTimer=null;
 var qTime=0, tTime=0;
 var panelOpen=false;
@@ -602,7 +617,8 @@ var startTime=0;
 var cBack=null;
 var calcExpr='';
 var warned5=false, warned1=false;
-var editingTestId=null; // track which test is being edited
+var editingTestId=null;
+var autoSaveInterval=null;
 
 var NDA={
   math:{q:120, marks:2.5, neg:0.83, total:300},
@@ -673,11 +689,10 @@ function hideValidation(){
   if(el) el.classList.remove('show');
 }
 
-function validateTest(qs, ans, name){
+function validateTest(qs, name){
   if(!name.trim()){ showValidation('Test name is required!','err'); return false; }
-  if(qs.length===0){ showValidation('No valid questions found!','err'); return false; }
+  if(qs.length===0){ showValidation('No valid questions found! Check format.','err'); return false; }
 
-  // Check for duplicate question numbers
   var seenNums={};
   var hasDup=false;
   for(var i=0;i<qs.length;i++){
@@ -686,22 +701,15 @@ function validateTest(qs, ans, name){
   }
   if(hasDup){ showValidation('Duplicate question numbers detected!','warn'); }
 
-  // Check option count
-  var lowOpt=0;
+  var lowOpt=0, emptyAns=0;
   for(var i=0;i<qs.length;i++){
     if(qs[i].opts.length<4) lowOpt++;
     if(qs[i].opts.length===0){ showValidation('Q'+qs[i].num+' has no options!','err'); return false; }
-  }
-  if(lowOpt>0){ showValidation(lowOpt+' question(s) have fewer than 4 options.','warn'); }
-
-  // Check empty answers
-  var emptyAns=0;
-  for(var i=0;i<qs.length;i++){
     if(!qs[i].ans || qs[i].ans==='') emptyAns++;
   }
+  if(lowOpt>0){ showValidation(lowOpt+' question(s) have fewer than 4 options.','warn'); }
   if(emptyAns>0){ showValidation(emptyAns+' question(s) have no correct answer.','warn'); }
 
-  // Check paper standards
   var expectedQ = paper==='math'?120:150;
   if(qs.length!==expectedQ){
     showValidation('Expected '+expectedQ+' questions for '+paper.toUpperCase()+' but found '+qs.length+'.','warn');
@@ -710,203 +718,261 @@ function validateTest(qs, ans, name){
   return true;
 }
 
-// ===== NDA PREMIUM PARSER =====
-// FIX #5, #23, #24: Handles Statement questions, Roman numerals, Assertion-Reason, Match, Tables
+// ===== COMPLETELY REWRITTEN NDA PARSER =====
+// This parser uses a state machine approach to properly handle:
+// - Multi-line question text
+// - Assertion-Reason questions
+// - Statement-based questions  
+// - Match the following
+// - Table questions
+// - Multi-line options
+
 function parseQuestions(text){
-  var qs=[];
-  var lines=text.split('\n');
+  var lines = text.split('\n');
+  var questions = [];
+  var currentQ = null;
+  var state = 'IDLE'; // IDLE, IN_QUESTION, IN_OPTIONS
+  var qTextBuffer = [];
+  var lastOptLetter = '';
 
-  // Step 1: Split by question boundaries using Q1, Q2, 1., 2. pattern
-  var questionBlocks=[];
-  var currentBlock=[];
+  function isQuestionStart(line){
+    // Match: Q1., Q2:, 1., 2:, Question 1, etc.
+    return /^(?:Q\s*\d+|Question\s+\d+|\d+)[\.:\s]/i.test(line.trim());
+  }
 
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i];
-    var trimmed=line.trim();
-    if(!trimmed) continue;
+  function extractQNum(line){
+    var m = line.trim().match(/^(?:Q\s*(\d+)|Question\s+(\d+)|(\d+))[\.:\s]/i);
+    if(m) return parseInt(m[1]||m[2]||m[3]);
+    return null;
+  }
 
-    // Check if this line starts a new question
-    // Patterns: Q1., Q2:, 1., 2:, Question 1, etc.
-    var isQStart = /^(?:Q?\s*(\d+)[\.:\s]+|Question\s+(\d+)[\.:\s]+|^\d+[\.:\s]+)(.+)/i.test(trimmed);
+  function extractQText(line){
+    var m = line.trim().match(/^(?:Q\s*\d+|Question\s+\d+|\d+)[\.:\s]+(.+)/i);
+    return m ? m[1].trim() : '';
+  }
 
-    if(isQStart && currentBlock.length>0){
-      // Previous block complete, save it
-      questionBlocks.push(currentBlock);
-      currentBlock=[line];
-    } else {
-      currentBlock.push(line);
+  function isOptionLine(line){
+    var trimmed = line.trim();
+    // STRICT: Must start with A-D followed by ) or . or space+text
+    // But NOT just "A is true" - must have ) or . after letter
+    return /^[A-D][\.\)]\s*/i.test(trimmed);
+  }
+
+  function extractOption(line){
+    var m = line.trim().match(/^([A-D])[\.\)]\s*(.*)/i);
+    if(m) return {let: m[1].toUpperCase(), txt: m[2].trim()};
+    return null;
+  }
+
+  function flushQuestion(){
+    if(currentQ){
+      // Join question text with newlines to preserve formatting
+      currentQ.text = qTextBuffer.join('\n').trim();
+      if(currentQ.text || currentQ.opts.length > 0){
+        questions.push(currentQ);
+      }
     }
   }
-  if(currentBlock.length>0) questionBlocks.push(currentBlock);
 
-  // Step 2: Parse each block
-  for(var b=0;b<questionBlocks.length;b++){
-    var block=questionBlocks[b];
-    var qNum=null, qText='';
-    var opts=[];
-    var inOpts=false;
-    var qTextLines=[];
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i];
+    var trimmed = line.trim();
 
-    for(var i=0;i<block.length;i++){
-      var line=block[i];
-      var trimmed=line.trim();
-      if(!trimmed) continue;
-
-      // Extract question number from first line
-      if(i===0){
-        var qm=trimmed.match(/^(?:Q?\s*(\d+)[\.:\s]+|Question\s+(\d+)[\.:\s]+|^\d+[\.:\s]+)(.+)/i);
-        if(qm){
-          qNum=parseInt(qm[1]||qm[2]||qm[3]);
-          qTextLines.push(qm[4] ? qm[4].trim() : '');
-        } else {
-          qTextLines.push(trimmed);
+    if(!trimmed){
+      // Empty line - if in options, might be multi-line option separator
+      // If in question, preserve as paragraph break
+      if(state === 'IN_QUESTION'){
+        qTextBuffer.push(''); // empty line in question text
+      } else if(state === 'IN_OPTIONS' && currentQ && currentQ.opts.length > 0){
+        // Could be multi-line option - add empty line to last option
+        // But only if next line is not a new option or question
+        if(i + 1 < lines.length){
+          var nextTrim = lines[i+1].trim();
+          if(nextTrim && !isOptionLine(nextTrim) && !isQuestionStart(nextTrim)){
+            currentQ.opts[currentQ.opts.length-1].txt += '\n';
+          }
         }
-        continue;
       }
-
-      // Check for option start: A), B), C), D) or A., B., C., D.
-      var om=trimmed.match(/^([A-D])[\.\)\s]+\s*(.*)/i);
-
-      if(om){
-        inOpts=true;
-        opts.push({let:om[1].toUpperCase(), txt:om[2].trim()});
-      } else if(inOpts){
-        // FIX #24: Multi-line option support - append to last option
-        if(opts.length>0){
-          opts[opts.length-1].txt+=' ' + trimmed;
-        }
-      } else {
-        // Still in question body
-        // Roman numerals, numbered statements, Assertion, Reason, Tables are all question body
-        qTextLines.push(trimmed);
-      }
+      continue;
     }
 
-    if(qNum!==null){
-      qs.push({
+    if(isQuestionStart(trimmed)){
+      // New question starts
+      flushQuestion();
+
+      var qNum = extractQNum(trimmed);
+      var qText = extractQText(trimmed);
+
+      currentQ = {
         num: qNum,
-        text: qTextLines.join(' ').trim(),
-        opts: opts
-      });
+        text: '',
+        opts: [],
+        ans: '',
+        sol: ''
+      };
+      qTextBuffer = qText ? [qText] : [];
+      state = 'IN_QUESTION';
+      lastOptLetter = '';
+      continue;
+    }
+
+    if(!currentQ){
+      // Lines before first question - skip
+      continue;
+    }
+
+    if(isOptionLine(trimmed)){
+      var opt = extractOption(trimmed);
+      if(opt){
+        state = 'IN_OPTIONS';
+        currentQ.opts.push(opt);
+        lastOptLetter = opt.let;
+      }
+    } else if(state === 'IN_OPTIONS'){
+      // Multi-line option continuation
+      if(currentQ.opts.length > 0){
+        currentQ.opts[currentQ.opts.length-1].txt += '\n' + trimmed;
+      }
+    } else {
+      // Still in question body
+      qTextBuffer.push(trimmed);
     }
   }
 
-  // Sort by question number and re-index
-  qs.sort(function(a,b){ return a.num-b.num; });
-  for(var i=0;i<qs.length;i++){ qs[i].num=i+1; }
+  // Flush last question
+  flushQuestion();
 
-  return qs;
+  // Sort by question number and re-index sequentially
+  questions.sort(function(a,b){ return a.num - b.num; });
+  for(var i = 0; i < questions.length; i++){
+    questions[i].num = i + 1;
+  }
+
+  return questions;
 }
 
-// FIX #9: Multiple correct answers support (e.g., "A,C" or "AC")
 function parseAnswers(text, count){
-  var ans=[];
-  var lines=text.split('\n');
-  var idx=0;
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
+  var ans = [];
+  var lines = text.split('\n');
+  var idx = 0;
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i].trim();
     if(!line) continue;
     // Support: 1-A,C or 1-AC or just A or just AC
-    var m=line.match(/^(\d+)[\.:\-\s]*([A-D](?:[,\s]*[A-D])*)$/i);
+    var m = line.match(/^(\d+)[\.:\-\s]*([A-D](?:[,\s]*[A-D])*)$/i);
     if(m){
-      var qNum=parseInt(m[1]);
-      var cleanAns=m[2].toUpperCase().replace(/[,\s]/g,'');
-      ans[qNum-1]=cleanAns; // e.g., "AC" for A and C
+      var qNum = parseInt(m[1]);
+      var cleanAns = m[2].toUpperCase().replace(/[,\s]/g, '');
+      ans[qNum - 1] = cleanAns;
     } else if(/^[A-D](?:[,\s]*[A-D])*$/i.test(line)){
-      var cleanAns=line.toUpperCase().replace(/[,\s]/g,'');
-      ans[idx]=cleanAns;
+      var cleanAns = line.toUpperCase().replace(/[,\s]/g, '');
+      ans[idx] = cleanAns;
       idx++;
     }
   }
-  while(ans.length<count) ans.push('');
+  while(ans.length < count) ans.push('');
   return ans;
 }
 
 function parseSolutions(text, count){
-  var sols=[];
-  var lines=text.split('\n');
-  var idx=0;
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
+  var sols = [];
+  var lines = text.split('\n');
+  var idx = 0;
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i].trim();
     if(!line) continue;
-    var m=line.match(/^(?:Q?(\d+)[\.:\s]+)?(.*)/i);
+    var m = line.match(/^(?:Q?(\d+)[\.:\s]+)?(.*)/i);
     if(m){
-      var qNum=m[1]?parseInt(m[1]):null;
-      if(qNum){ sols[qNum-1]=m[2].trim(); }
-      else { sols[idx]=m[2].trim(); idx++; }
+      var qNum = m[1] ? parseInt(m[1]) : null;
+      if(qNum){ sols[qNum - 1] = m[2].trim(); }
+      else { sols[idx] = m[2].trim(); idx++; }
     }
   }
-  while(sols.length<count) sols.push('');
+  while(sols.length < count) sols.push('');
   return sols;
 }
 
 function buildTest(name, qText, aText, sText){
-  var qs=parseQuestions(qText);
-  if(qs.length===0){ showValidation('No valid questions found!','err'); return null; }
-  var ans=parseAnswers(aText, qs.length);
-  var sols=parseSolutions(sText, qs.length);
-  for(var i=0;i<qs.length;i++){
-    qs[i].ans=ans[i]||'';
-    qs[i].sol=sols[i]||'';
+  var qs = parseQuestions(qText);
+  if(qs.length === 0){ showValidation('No valid questions found! Check your format.','err'); return null; }
+
+  var ans = parseAnswers(aText, qs.length);
+  var sols = parseSolutions(sText, qs.length);
+  for(var i = 0; i < qs.length; i++){
+    qs[i].ans = ans[i] || '';
+    qs[i].sol = sols[i] || '';
   }
 
-  if(!validateTest(qs, ans, name)) return null;
+  if(!validateTest(qs, name)) return null;
 
-  var c=NDA[paper];
-  var tTime=parseFloat($('totalTime').value)||150;
-  var pos=parseFloat($('posMarks').value)||c.marks;
-  var neg=parseFloat($('negMarks').value)||c.neg;
+  var c = NDA[paper];
+  var tTime = parseFloat($('totalTime').value) || 150;
+  var pos = parseFloat($('posMarks').value) || c.marks;
+  var neg = parseFloat($('negMarks').value) || c.neg;
   return {
-    id:Date.now(), name:name||'Quick Test', paper:paper,
-    subject:$('subjectTag').value||'', qs:qs, qTime:90,
-    tTime:tTime*60, marks:pos, neg:neg, total:qs.length*pos,
-    date:new Date().toLocaleDateString()
+    id: Date.now(),
+    name: name || 'Quick Test',
+    paper: paper,
+    subject: $('subjectTag').value || '',
+    qs: qs,
+    qTime: 90,
+    tTime: tTime * 60,
+    marks: pos,
+    neg: neg,
+    total: qs.length * pos,
+    date: new Date().toLocaleDateString()
   };
 }
 
 function saveTest(){
-  var t=buildTest($('testName').value.trim(), $('questionsInput').value, $('answersInput').value, $('solutionsInput').value);
+  var name = $('testName').value.trim();
+  var t = buildTest(name, $('questionsInput').value, $('answersInput').value, $('solutionsInput').value);
   if(!t) return;
 
-  // FIX #3, #22: Check for duplicate names and handle edit mode
-  var dup=false;
-  for(var i=0;i<tests.length;i++){
-    if(tests[i].name.toLowerCase()===t.name.toLowerCase() && tests[i].id!==editingTestId){
-      dup=true; break;
+  // Check for duplicate names - BLOCK save if duplicate
+  var dup = false;
+  for(var i = 0; i < tests.length; i++){
+    if(tests[i].name.toLowerCase() === t.name.toLowerCase() && tests[i].id !== editingTestId){
+      dup = true; break;
     }
   }
-  if(dup && !editingTestId){ showValidation('A test with this name already exists!','warn'); }
+  if(dup && !editingTestId){ 
+    showValidation('A test with this name already exists! Use a different name.','err'); 
+    return; // BLOCK save
+  }
 
-  // If editing, remove the old test first
+  // If editing, remove old test first
   if(editingTestId){
-    var newTests=[];
-    for(var i=0;i<tests.length;i++){
-      if(tests[i].id!==editingTestId) newTests.push(tests[i]);
+    var newTests = [];
+    for(var i = 0; i < tests.length; i++){
+      if(tests[i].id !== editingTestId) newTests.push(tests[i]);
     }
-    tests=newTests;
-    editingTestId=null;
+    tests = newTests;
+    editingTestId = null;
   }
 
-  tests.push(t); saveStore(); renderTests();
-  toast('&#9989; Test saved successfully!');
+  tests.push(t); 
+  saveStore(); 
+  renderTests();
+  toast('&#9989; Test saved: ' + esc(t.name) + ' (' + t.qs.length + ' questions)');
   clearForm();
   switchTab('saved');
 }
 
 function startNow(){
-  var t=buildTest($('testName').value.trim()||'Quick Test', $('questionsInput').value, $('answersInput').value, $('solutionsInput').value);
+  var t = buildTest($('testName').value.trim() || 'Quick Test', $('questionsInput').value, $('answersInput').value, $('solutionsInput').value);
   if(!t) return;
   startTest(t);
 }
 
 function clearForm(){
-  $('testName').value='';
-  $('subjectTag').value='';
-  $('questionsInput').value='';
-  $('answersInput').value='';
-  $('solutionsInput').value='';
+  $('testName').value = '';
+  $('subjectTag').value = '';
+  $('questionsInput').value = '';
+  $('answersInput').value = '';
+  $('solutionsInput').value = '';
   hideValidation();
-  editingTestId=null;
+  editingTestId = null;
 }
 
 function saveSettings(){
@@ -915,60 +981,72 @@ function saveSettings(){
 }
 
 function renderTests(){
-  var box=$('savedTests');
-  if(tests.length===0){ 
-    box.innerHTML='<p style="color:var(--text-muted);text-align:center;font-size:13px;padding:24px;">No saved tests yet. Create one!</p>'; 
+  var box = $('savedTests');
+  if(tests.length === 0){ 
+    box.innerHTML = '<p style="color:var(--text-muted);text-align:center;font-size:13px;padding:24px;">No saved tests yet. Create one!</p>'; 
     return; 
   }
-  var h='';
-  for(var i=0;i<tests.length;i++){
-    var t=tests[i];
-    var p=t.paper==='math'?'Math':'GAT';
-    var sub=t.subject?' | '+esc(t.subject):'';
-    h+='<div class="test-item">'+
-      '<div><div class="test-item-name">'+esc(t.name)+'</div>'+
-      '<div class="test-item-meta">'+p+sub+' | '+t.qs.length+' Q | '+t.total.toFixed(1)+' Marks | '+t.date+'</div></div>'+
-      '<div class="test-item-actions">'+
-      '<button class="small-btn small-btn-start" onclick="loadTest('+t.id+')">Start</button>'+
-      '<button class="small-btn small-btn-edit" onclick="editTest('+t.id+')">Edit</button>'+
-      '<button class="small-btn small-btn-del" onclick="delTest('+t.id+')">Del</button>'+
+  var h = '';
+  for(var i = 0; i < tests.length; i++){
+    var t = tests[i];
+    var p = t.paper === 'math' ? 'Math' : 'GAT';
+    var sub = t.subject ? ' | ' + esc(t.subject) : '';
+    h += '<div class="test-item">' +
+      '<div><div class="test-item-name">' + esc(t.name) + '</div>' +
+      '<div class="test-item-meta">' + p + sub + ' | ' + t.qs.length + ' Q | ' + t.total.toFixed(1) + ' Marks | ' + t.date + '</div></div>' +
+      '<div class="test-item-actions">' +
+      '<button class="small-btn small-btn-start" onclick="loadTest(' + t.id + ')">Start</button>' +
+      '<button class="small-btn small-btn-edit" onclick="editTest(' + t.id + ')">Edit</button>' +
+      '<button class="small-btn small-btn-del" onclick="delTest(' + t.id + ')">Del</button>' +
       '</div></div>';
   }
-  box.innerHTML=h;
+  box.innerHTML = h;
 }
 
 function loadTest(id){ 
-  for(var i=0;i<tests.length;i++) if(tests[i].id===id){ startTest(tests[i]); return; } 
+  for(var i = 0; i < tests.length; i++){
+    if(tests[i].id === id){ startTest(tests[i]); return; }
+  } 
 }
 
-// FIX #3: Edit test no longer permanently deletes original
 function editTest(id){
-  for(var i=0;i<tests.length;i++){
-    if(tests[i].id===id){
-      var t=tests[i];
-      $('testName').value=t.name;
-      $('subjectTag').value=t.subject;
+  for(var i = 0; i < tests.length; i++){
+    if(tests[i].id === id){
+      var t = tests[i];
+      $('testName').value = t.name;
+      $('subjectTag').value = t.subject;
       selectPaper(t.paper);
-      $('totalTime').value=Math.round(t.tTime/60);
-      $('posMarks').value=t.marks;
-      $('negMarks').value=t.neg;
-      var qText='';
-      for(var j=0;j<t.qs.length;j++){
-        var q=t.qs[j];
-        qText+='Q'+q.num+'. '+q.text+'\n';
-        for(var k=0;k<q.opts.length;k++) qText+=q.opts[k].let+') '+q.opts[k].txt+'\n';
-        qText+='\n';
+      $('totalTime').value = Math.round(t.tTime / 60);
+      $('posMarks').value = t.marks;
+      $('negMarks').value = t.neg;
+
+      // Rebuild question text from parsed data
+      var qText = '';
+      for(var j = 0; j < t.qs.length; j++){
+        var q = t.qs[j];
+        qText += 'Q' + q.num + '. ' + q.text + '\n';
+        for(var k = 0; k < q.opts.length; k++){
+          qText += q.opts[k].let + ') ' + q.opts[k].txt + '\n';
+        }
+        qText += '\n';
       }
-      $('questionsInput').value=qText.trim();
-      var aText='';
-      for(var j=0;j<t.qs.length;j++) aText+=(j+1)+'-'+t.qs[j].ans+'\n';
-      $('answersInput').value=aText.trim();
-      var sText='';
-      for(var j=0;j<t.qs.length;j++) if(t.qs[j].sol) sText+='Q'+(j+1)+': '+t.qs[j].sol+'\n';
-      $('solutionsInput').value=sText.trim();
-      editingTestId=id; // Track which test is being edited
+      $('questionsInput').value = qText.trim();
+
+      var aText = '';
+      for(var j = 0; j < t.qs.length; j++){
+        aText += (j + 1) + '-' + t.qs[j].ans + '\n';
+      }
+      $('answersInput').value = aText.trim();
+
+      var sText = '';
+      for(var j = 0; j < t.qs.length; j++){
+        if(t.qs[j].sol) sText += 'Q' + (j + 1) + ': ' + t.qs[j].sol + '\n';
+      }
+      $('solutionsInput').value = sText.trim();
+
+      editingTestId = id;
       switchTab('create');
-      toast('Editing: '+esc(t.name)+'. Click Save to update.');
+      toast('Editing: ' + esc(t.name) + '. Click Save to update.');
       return;
     }
   }
@@ -976,31 +1054,38 @@ function editTest(id){
 
 function delTest(id){
   showConfirm('Delete Test?','This test will be permanently deleted.',function(){
-    var n=[]; 
-    for(var i=0;i<tests.length;i++) if(tests[i].id!==id) n.push(tests[i]);
-    tests=n; saveStore(); renderTests(); toast('Test deleted!');
+    var n = []; 
+    for(var i = 0; i < tests.length; i++){
+      if(tests[i].id !== id) n.push(tests[i]);
+    }
+    tests = n; 
+    saveStore(); 
+    renderTests(); 
+    toast('Test deleted!');
   });
 }
 
-// FIX #26, #27: Auto-save progress and resume support
+// ===== AUTO-SAVE & RESUME SYSTEM =====
 function saveProgress(){
   if(!test || reviewMode) return;
-  var progress={
-    testId:test.id,
-    qIdx:qIdx,
-    answers:answers,
-    flags:flags,
-    qTimes:qTimes,
-    tTime:tTime,
-    startTime:startTime,
-    timestamp:Date.now()
+  var progress = {
+    testId: test.id,
+    testData: test,
+    qIdx: qIdx,
+    answers: answers,
+    flags: flags,
+    qTimes: qTimes,
+    qTime: qTime,
+    tTime: tTime,
+    startTime: startTime,
+    timestamp: Date.now()
   };
   try{ localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); }catch(e){}
 }
 
 function loadProgress(){
   try{
-    var d=localStorage.getItem(PROGRESS_KEY);
+    var d = localStorage.getItem(PROGRESS_KEY);
     if(d) return JSON.parse(d);
   }catch(e){}
   return null;
@@ -1010,281 +1095,374 @@ function clearProgress(){
   try{ localStorage.removeItem(PROGRESS_KEY); }catch(e){}
 }
 
-function startTest(t){
-  test=t; qIdx=0; answers=[]; flags=[]; qTimes=[];
-  for(var i=0;i<t.qs.length;i++){ answers.push(''); flags.push(false); qTimes.push(0); }
-  qTime=t.qTime; tTime=t.tTime;
-  reviewMode=false; startTime=Date.now();
-  warned5=false; warned1=false;
+function showResumeDialog(progress){
+  $('rTitle').textContent = 'Resume Test?';
+  $('rMsg').textContent = 'You were attempting "' + progress.testData.name + '" (Q' + (progress.qIdx + 1) + '/' + progress.testData.qs.length + '). Resume from where you left off?';
+  $('resumeBox').classList.add('show');
+
+  $('rYes').onclick = function(){
+    $('resumeBox').classList.remove('show');
+    restoreProgress(progress);
+  };
+  $('rNo').onclick = function(){
+    $('resumeBox').classList.remove('show');
+    clearProgress();
+  };
+}
+
+function restoreProgress(progress){
+  test = progress.testData;
+  qIdx = progress.qIdx;
+  answers = progress.answers;
+  flags = progress.flags || [];
+  qTimes = progress.qTimes || [];
+  qTime = progress.qTime || test.qTime;
+  tTime = progress.tTime;
+  startTime = progress.startTime;
+  reviewMode = false;
+  warned5 = false; 
+  warned1 = false;
+
+  // Pad arrays if needed
+  while(answers.length < test.qs.length) answers.push('');
+  while(flags.length < test.qs.length) flags.push(false);
+  while(qTimes.length < test.qs.length) qTimes.push(0);
 
   $('setupScreen').classList.add('hidden');
   $('resultScreen').classList.remove('show');
-  $('testHeader').style.display='flex';
-  $('mainContainer').style.display='flex';
-  $('navBar').style.display='flex';
-  $('headerName').textContent=t.name;
-  $('headerName').title=t.name; // tooltip for long names
-  $('headerSubject').textContent=t.paper==='math'?'MATHEMATICS':'GAT';
-  $('qCounterTotal').textContent=t.qs.length;
+  $('testHeader').style.display = 'flex';
+  $('mainContainer').style.display = 'flex';
+  $('navBar').style.display = 'flex';
+  $('headerName').textContent = test.name;
+  $('headerName').title = test.name;
+  $('headerSubject').textContent = test.paper === 'math' ? 'MATHEMATICS' : 'GAT';
+  $('qCounterTotal').textContent = test.qs.length;
+  $('timerBox').style.display = 'flex';
 
-  // FIX #11: Hide timers in review mode (initially test mode, so show)
-  $('timerBox').style.display='flex';
-
-  renderQ(); renderGrid(); startTimers();
-
-  // Auto-save interval
-  setInterval(saveProgress, 30000); // save every 30 seconds
+  renderQ(); 
+  renderGrid(); 
+  startTimers();
+  startAutoSave();
+  toast('&#9989; Test resumed from Q' + (qIdx + 1));
 }
 
-// FIX #2: Question timer no longer resets on every Next/Prev
-// FIX #29: Question flagging support
-function renderQ(){
-  var q=test.qs[qIdx];
-  var area=$('questionArea');
-  var userAns=answers[qIdx];
-  var isReview=reviewMode;
-  var pLabel=test.paper==='math'?'MATHEMATICS':'GAT';
-  var isFlagged=flags[qIdx];
+function startAutoSave(){
+  if(autoSaveInterval) clearInterval(autoSaveInterval);
+  autoSaveInterval = setInterval(saveProgress, 15000);
+}
 
-  var optsHtml='';
-  for(var i=0;i<q.opts.length;i++){
-    var o=q.opts[i];
-    var cls='option';
-    var badge='';
+function stopAutoSave(){
+  if(autoSaveInterval){ clearInterval(autoSaveInterval); autoSaveInterval = null; }
+}
+
+// ===== START TEST =====
+function startTest(t){
+  test = t; 
+  qIdx = 0; 
+  answers = []; 
+  flags = []; 
+  qTimes = [];
+  for(var i = 0; i < t.qs.length; i++){ 
+    answers.push(''); 
+    flags.push(false); 
+    qTimes.push(0); 
+  }
+  qTime = t.qTime; 
+  tTime = t.tTime;
+  reviewMode = false; 
+  startTime = Date.now();
+  warned5 = false; 
+  warned1 = false;
+
+  $('setupScreen').classList.add('hidden');
+  $('resultScreen').classList.remove('show');
+  $('testHeader').style.display = 'flex';
+  $('mainContainer').style.display = 'flex';
+  $('navBar').style.display = 'flex';
+  $('headerName').textContent = t.name;
+  $('headerName').title = t.name;
+  $('headerSubject').textContent = t.paper === 'math' ? 'MATHEMATICS' : 'GAT';
+  $('qCounterTotal').textContent = t.qs.length;
+  $('timerBox').style.display = 'flex';
+
+  renderQ(); 
+  renderGrid(); 
+  startTimers();
+  startAutoSave();
+}
+
+// ===== INSTANT FEEDBACK SYSTEM =====
+function renderQ(){
+  var q = test.qs[qIdx];
+  var area = $('questionArea');
+  var userAns = answers[qIdx];
+  var isReview = reviewMode;
+  var pLabel = test.paper === 'math' ? 'MATHEMATICS' : 'GAT';
+  var isFlagged = flags[qIdx];
+
+  var optsHtml = '';
+  for(var i = 0; i < q.opts.length; i++){
+    var o = q.opts[i];
+    var cls = 'option';
+    var badge = '';
+
+    var isCorrectAns = q.ans.indexOf(o.let) >= 0;
+    var isUserSelected = userAns && userAns.indexOf(o.let) >= 0;
 
     if(isReview){
-      // FIX #9: Check if answer contains the option letter (multi-answer support)
-      var isCorrectAns = q.ans.indexOf(o.let)>=0;
-      var isUserWrong = userAns && userAns.indexOf(o.let)>=0 && !isCorrectAns;
-
       if(isCorrectAns){ 
-        cls+=' correct'; 
-        badge='<span class="option-status-badge correct">&#10004; Correct</span>'; 
+        cls += ' correct'; 
+        badge = '<span class="option-status-badge correct">&#10004; Correct</span>'; 
       }
-      else if(isUserWrong){ 
-        cls+=' wrong'; 
-        badge='<span class="option-status-badge wrong">&#10008; Wrong</span>'; 
+      else if(isUserSelected && !isCorrectAns){ 
+        cls += ' wrong'; 
+        badge = '<span class="option-status-badge wrong">&#10008; Wrong</span>'; 
       }
     } else {
-      if(userAns && userAns.indexOf(o.let)>=0){ cls+=' selected'; }
+      // TEST MODE: Instant feedback!
+      if(isUserSelected){
+        if(isCorrectAns){
+          cls += ' correct';
+          badge = '<span class="option-status-badge correct">&#10004; Correct</span>';
+        } else {
+          cls += ' wrong';
+          badge = '<span class="option-status-badge wrong">&#10008; Wrong</span>';
+        }
+      }
     }
 
-    optsHtml+='<div class="'+cls+'" onclick="pickOpt(\''+o.let+'\')">'+
-      '<span class="option-letter">'+o.let+'</span>'+
-      '<span class="option-text">'+esc(o.txt)+'</span>'+badge+'</div>';
+    optsHtml += '<div class="' + cls + '" onclick="pickOpt(\'' + o.let + '\')">' +
+      '<span class="option-letter">' + o.let + '</span>' +
+      '<span class="option-text">' + esc(o.txt).replace(/\n/g, '<br>') + '</span>' + badge + '</div>';
   }
 
-  var solHtml='';
+  var solHtml = '';
   if(q.sol){
-    solHtml='<div class="hint-section">'+
-      '<button class="hint-btn" onclick="toggleSol(this)">&#128161; Show Solution</button>'+
-      '<div class="solution-box">'+
-      '<div class="solution-label">&#9989; Correct Answer</div>'+
-      '<div class="solution-ans">'+q.ans+'</div>'+
-      '<div class="solution-text">'+esc(q.sol)+'</div>'+
+    solHtml = '<div class="hint-section">' +
+      '<button class="hint-btn" onclick="toggleSol(this)">&#128161; Show Solution</button>' +
+      '<div class="solution-box">' +
+      '<div class="solution-label">&#9989; Correct Answer</div>' +
+      '<div class="solution-ans">' + q.ans + '</div>' +
+      '<div class="solution-text">' + esc(q.sol) + '</div>' +
       '</div></div>';
   }
 
-  area.innerHTML='<div class="question-card">'+
-    '<div class="q-header">'+
-    '<div class="q-badge"><span class="q-num">'+(qIdx+1)+'</span><span class="q-total">/'+test.qs.length+'</span></div>'+
-    '<div class="q-subject">'+pLabel+'</div></div>'+
-    '<div class="question-text">'+esc(q.text)+'</div>'+
-    '<div class="options-container">'+optsHtml+'</div>'+solHtml+'</div>';
+  // Use white-space:pre-wrap for question text to preserve formatting
+  area.innerHTML = '<div class="question-card">' +
+    '<div class="q-header">' +
+    '<div class="q-badge"><span class="q-num">' + (qIdx + 1) + '</span><span class="q-total">/' + test.qs.length + '</span></div>' +
+    '<div class="q-subject">' + pLabel + '</div></div>' +
+    '<div class="question-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>' +
+    '<div class="options-container">' + optsHtml + '</div>' + solHtml + '</div>';
 
-  $('qCounterCurrent').textContent=qIdx+1;
-  $('prevBtn').disabled=(qIdx===0);
+  $('qCounterCurrent').textContent = qIdx + 1;
+  $('prevBtn').disabled = (qIdx === 0);
 
-  // FIX #12: Review mode gets "End Review" button, test mode gets "Finish"
   if(isReview){
-    $('nextBtn').innerHTML=(qIdx===test.qs.length-1)?'End Review &#10003;':'Next &#8594;';
-    $('nextBtn').className=(qIdx===test.qs.length-1)?'nav-btn review-finish':'nav-btn primary';
+    $('nextBtn').innerHTML = (qIdx === test.qs.length - 1) ? 'End Review &#10003;' : 'Next &#8594;';
+    $('nextBtn').className = (qIdx === test.qs.length - 1) ? 'nav-btn review-finish' : 'nav-btn primary';
   } else {
-    $('nextBtn').innerHTML=(qIdx===test.qs.length-1)?'Finish &#10003;':'Next &#8594;';
-    $('nextBtn').className=(qIdx===test.qs.length-1)?'nav-btn finish':'nav-btn primary';
+    $('nextBtn').innerHTML = (qIdx === test.qs.length - 1) ? 'Finish &#10003;' : 'Next &#8594;';
+    $('nextBtn').className = (qIdx === test.qs.length - 1) ? 'nav-btn finish' : 'nav-btn primary';
   }
 
-  // Update flag button
   $('flagBtn').classList.toggle('flagged', isFlagged);
 
   updateGrid();
 }
 
-// FIX #9: Toggle multi-select for answers
 function pickOpt(letter){
   if(reviewMode) return;
+
   // Toggle selection
-  if(answers[qIdx].indexOf(letter)>=0){
-    answers[qIdx]=answers[qIdx].replace(letter,'');
+  if(answers[qIdx].indexOf(letter) >= 0){
+    answers[qIdx] = answers[qIdx].replace(letter, '');
   } else {
-    answers[qIdx]+=letter;
+    answers[qIdx] += letter;
   }
   // Sort letters
-  var sorted=answers[qIdx].split('').sort().join('');
-  answers[qIdx]=sorted;
-  renderQ();
-  updateGrid();
+  var sorted = answers[qIdx].split('').sort().join('');
+  answers[qIdx] = sorted;
+
+  renderQ(); // Re-render to show instant green/red feedback
+  updateGrid(); // Update panel
+  saveProgress(); // Auto-save after each answer
 }
 
-// FIX #29: Toggle flag
 function toggleFlag(){
-  flags[qIdx]=!flags[qIdx];
+  flags[qIdx] = !flags[qIdx];
   $('flagBtn').classList.toggle('flagged', flags[qIdx]);
   updateGrid();
   renderFlagList();
+  saveProgress();
 }
 
 function renderFlagList(){
-  var list=$('flagList');
-  var panel=$('flagPanel');
-  var flagged=[];
-  for(var i=0;i<flags.length;i++) if(flags[i]) flagged.push(i+1);
-
-  if(flagged.length===0){ panel.style.display='none'; return; }
-
-  panel.style.display='block';
-  var h='';
-  for(var i=0;i<flagged.length;i++){
-    h+='<span class="flag-chip" onclick="jumpQ('+(flagged[i]-1)+')">Q'+flagged[i]+'</span>';
+  var list = $('flagList');
+  var panel = $('flagPanel');
+  var flagged = [];
+  for(var i = 0; i < flags.length; i++){
+    if(flags[i]) flagged.push(i + 1);
   }
-  list.innerHTML=h;
+
+  if(flagged.length === 0){ panel.style.display = 'none'; return; }
+
+  panel.style.display = 'block';
+  var h = '';
+  for(var i = 0; i < flagged.length; i++){
+    h += '<span class="flag-chip" onclick="jumpQ(' + (flagged[i] - 1) + ')">Q' + flagged[i] + '</span>';
+  }
+  list.innerHTML = h;
 }
 
 function toggleSol(btn){
-  var box=btn.nextElementSibling;
+  var box = btn.nextElementSibling;
   if(box.classList.contains('show')){
     box.classList.remove('show');
-    btn.innerHTML='&#128161; Show Solution';
+    btn.innerHTML = '&#128161; Show Solution';
   } else {
     box.classList.add('show');
-    btn.innerHTML='&#128308; Hide Solution';
+    btn.innerHTML = '&#128308; Hide Solution';
   }
 }
 
 function nextQ(){ 
-  if(qIdx<test.qs.length-1){ qIdx++; renderQ(); } 
-  else { 
+  if(qIdx < test.qs.length - 1){ 
+    qIdx++; 
+    renderQ(); 
+  } else { 
     if(reviewMode){
-      // End review - go home
       goHome();
     } else {
       submitTest(); 
     }
   } 
 }
+
 function prevQ(){ 
-  if(qIdx>0){ qIdx--; renderQ(); } 
+  if(qIdx > 0){ 
+    qIdx--; 
+    renderQ(); 
+  } 
 }
+
 function jumpQ(idx){ 
-  qIdx=idx; renderQ(); 
+  qIdx = idx; 
+  renderQ(); 
 }
 
 function updateProgress(){
-  var answered=0;
-  for(var i=0;i<answers.length;i++) if(answers[i]) answered++;
-  var pct=Math.round(answered/test.qs.length*100);
-  $('progressBar').style.width=pct+'%';
-  $('progressText').textContent=pct+'% Completed ('+answered+'/'+test.qs.length+')';
+  var answered = 0;
+  for(var i = 0; i < answers.length; i++){
+    if(answers[i]) answered++;
+  }
+  var pct = Math.round(answered / test.qs.length * 100);
+  $('progressBar').style.width = pct + '%';
+  $('progressText').textContent = pct + '% Completed (' + answered + '/' + test.qs.length + ')';
 }
 
 function renderGrid(){
-  var g=$('statusGrid');
-  var h='';
-  for(var i=0;i<test.qs.length;i++){
-    h+='<div class="status-item" id="st-'+i+'" onclick="jumpQ('+i+')">'+(i+1)+'</div>';
+  var g = $('statusGrid');
+  var h = '';
+  for(var i = 0; i < test.qs.length; i++){
+    h += '<div class="status-item" id="st-' + i + '" onclick="jumpQ(' + i + ')">' + (i + 1) + '</div>';
   }
-  g.innerHTML=h;
+  g.innerHTML = h;
   renderFlagList();
 }
 
 function updateGrid(){
-  var c=0,w=0,u=0,marks=0;
-  for(var i=0;i<test.qs.length;i++){
-    var el=$('st-'+i); if(!el) continue;
-    el.className='status-item';
-    if(i===qIdx) el.classList.add('current');
+  var c = 0, w = 0, u = 0, marks = 0;
+  for(var i = 0; i < test.qs.length; i++){
+    var el = $('st-' + i); 
+    if(!el) continue;
+    el.className = 'status-item';
+    if(i === qIdx) el.classList.add('current');
     if(flags[i]) el.classList.add('flagged');
 
-    var ans=answers[i];
-    var qAns=test.qs[i].ans;
+    var ans = answers[i];
+    var qAns = test.qs[i].ans;
 
-    if(reviewMode){
-      // FIX #9: Check if user's answer matches correct answer
-      var isCorrect = ans && ans===qAns;
-      var isWrong = ans && ans!==qAns;
-
-      if(isCorrect){ el.classList.add('correct'); c++; marks+=test.marks; }
-      else if(isWrong){ el.classList.add('wrong'); w++; marks-=test.neg; }
-      else { u++; }
+    if(ans){
+      if(ans === qAns){ 
+        el.classList.add('correct'); 
+        c++; 
+        marks += test.marks; 
+      }
+      else { 
+        el.classList.add('wrong'); 
+        w++; 
+        marks -= test.neg; 
+      }
     } else {
-      if(ans){ el.classList.add('answered'); }
-      else { u++; }
-      // Live score calculation
-      if(ans===qAns) marks+=test.marks;
-      else if(ans) marks-=test.neg;
+      u++;
     }
   }
 
-  if(reviewMode){
-    $('scoreVal').textContent=marks.toFixed(2);
-    $('msC').textContent=c; $('msW').textContent=w;
-    $('msU').textContent=u; $('msA').textContent=(c+w);
-  } else {
-    $('scoreVal').textContent=marks.toFixed(2);
-    var att=0;
-    for(var i=0;i<answers.length;i++) if(answers[i]) att++;
-    $('msC').textContent='-'; $('msW').textContent='-';
-    $('msU').textContent=(test.qs.length-att); $('msA').textContent=att;
-  }
+  $('scoreVal').textContent = marks.toFixed(2);
+  $('msC').textContent = c; 
+  $('msW').textContent = w;
+  $('msU').textContent = u; 
+  $('msA').textContent = (c + w);
+
   updateProgress();
 }
 
 function togglePanel(){
-  panelOpen=!panelOpen;
+  panelOpen = !panelOpen;
   $('rightPanel').classList.toggle('open', panelOpen);
 }
 
 function startTimers(){
   stopTimers();
-  qTimer=setInterval(function(){
+  qTimer = setInterval(function(){
     if(!reviewMode){
       qTime--;
-      qTimes[qIdx]++; // Track time per question
-      if(qTime<=0){ qTime=test.qTime; }
+      qTimes[qIdx]++;
+      if(qTime <= 0){ qTime = test.qTime; }
       updateTimers();
     }
-  },1000);
-  tTimer=setInterval(function(){
+  }, 1000);
+  tTimer = setInterval(function(){
     if(!reviewMode){
       tTime--; 
-      if(tTime<=0){ stopTimers(); submitTest(); return; }
+      if(tTime <= 0){ 
+        stopTimers(); 
+        stopAutoSave(); 
+        submitTest(); 
+        return; 
+      }
       updateTimers();
     }
-  },1000);
+  }, 1000);
   updateTimers();
 }
-function stopTimers(){ clearInterval(qTimer); clearInterval(tTimer); }
+
+function stopTimers(){ 
+  clearInterval(qTimer); 
+  clearInterval(tTimer); 
+}
 
 function updateTimers(){
-  $('qTimerVal').textContent=fmtMMSS(qTime);
-  $('tTimerVal').textContent=fmtHMS(tTime);
+  $('qTimerVal').textContent = fmtMMSS(qTime);
+  $('tTimerVal').textContent = fmtHMS(tTime);
 
-  var qe=$('qTimer'), te=$('tTimer'), wo=$('warningOverlay');
+  var qe = $('qTimer'), te = $('tTimer'), wo = $('warningOverlay');
 
-  if(qTime<=10){ qe.classList.add('danger'); qe.classList.remove('warning'); }
-  else if(qTime<=30){ qe.classList.add('warning'); qe.classList.remove('danger'); }
+  if(qTime <= 10){ qe.classList.add('danger'); qe.classList.remove('warning'); }
+  else if(qTime <= 30){ qe.classList.add('warning'); qe.classList.remove('danger'); }
   else { qe.classList.remove('warning'); qe.classList.remove('danger'); }
 
-  if(tTime<=60){
+  if(tTime <= 60){
     te.classList.add('danger');
     te.classList.remove('warning');
     wo.classList.add('show');
-    if(!warned1){ warned1=true; toast('&#9888;&#65039; 1 MINUTE LEFT! Submit now!','warn'); }
-  } else if(tTime<=300){
+    if(!warned1){ warned1 = true; toast('&#9888;&#65039; 1 MINUTE LEFT! Submit now!','warn'); }
+  } else if(tTime <= 300){
     te.classList.add('warning');
     te.classList.remove('danger');
     wo.classList.remove('show');
-    if(!warned5){ warned5=true; toast('&#9888;&#65039; 5 minutes remaining!','warn'); }
+    if(!warned5){ warned5 = true; toast('&#9888;&#65039; 5 minutes remaining!','warn'); }
   } else {
     te.classList.remove('warning');
     te.classList.remove('danger');
@@ -1296,180 +1474,187 @@ function toggleCalc(){
   $('calcOverlay').classList.toggle('show');
 }
 
-// FIX #16, #17, #18: Safer calculator with division by zero and large number handling
 function calcInput(val){
-  if(calcExpr.length>50) return; // limit input length
-  calcExpr+=val;
-  $('calcDisplay').textContent=calcExpr||'0';
+  if(calcExpr.length > 50) return;
+  calcExpr += val;
+  $('calcDisplay').textContent = calcExpr || '0';
 }
+
 function calcClear(){
-  calcExpr='';
-  $('calcDisplay').textContent='0';
+  calcExpr = '';
+  $('calcDisplay').textContent = '0';
 }
+
 function calcBack(){
-  calcExpr=calcExpr.slice(0,-1);
-  $('calcDisplay').textContent=calcExpr||'0';
+  calcExpr = calcExpr.slice(0, -1);
+  $('calcDisplay').textContent = calcExpr || '0';
 }
+
 function calcEquals(){
   try{
-    var clean=calcExpr.replace(/[^0-9+\-*/().\s]/g,'');
-    if(!clean){ $('calcDisplay').textContent='Error'; calcExpr=''; return; }
-
-    // Check for division by zero
+    var clean = calcExpr.replace(/[^0-9+\-*/().\s]/g, '');
+    if(!clean){ $('calcDisplay').textContent = 'Error'; calcExpr = ''; return; }
     if(/\/\s*0/.test(clean)){
-      $('calcDisplay').textContent='Undefined';
-      calcExpr='';
+      $('calcDisplay').textContent = 'Undefined';
+      calcExpr = '';
       return;
     }
-
-    var res=Function('"use strict"; return ('+clean+')')();
-
-    // Handle Infinity and NaN
+    var res = Function('"use strict"; return (' + clean + ')')();
     if(!isFinite(res) || isNaN(res)){ 
-      $('calcDisplay').textContent='Error'; 
-      calcExpr=''; 
+      $('calcDisplay').textContent = 'Error'; 
+      calcExpr = ''; 
       return; 
     }
-
-    var str=String(res);
-    if(str.length>16) str=parseFloat(res).toExponential(6);
-    $('calcDisplay').textContent=str;
-    calcExpr=str;
+    var str = String(res);
+    if(str.length > 16) str = parseFloat(res).toExponential(6);
+    $('calcDisplay').textContent = str;
+    calcExpr = str;
   }catch(e){
-    $('calcDisplay').textContent='Error';
-    calcExpr='';
+    $('calcDisplay').textContent = 'Error';
+    calcExpr = '';
   }
 }
 
 function submitTest(){
   stopTimers();
+  stopAutoSave();
   clearProgress();
   $('warningOverlay').classList.remove('show');
-  var taken=Math.floor((Date.now()-startTime)/1000);
-  var c=0,w=0,u=0, pos=0, neg=0;
-  for(var i=0;i<test.qs.length;i++){
-    var a=answers[i], qa=test.qs[i].ans;
+  var taken = Math.floor((Date.now() - startTime) / 1000);
+  var c = 0, w = 0, u = 0, pos = 0, neg = 0;
+  for(var i = 0; i < test.qs.length; i++){
+    var a = answers[i], qa = test.qs[i].ans;
     if(!a) u++;
-    else if(a===qa){ c++; pos+=test.marks; }
-    else { w++; neg+=test.neg; }
+    else if(a === qa){ c++; pos += test.marks; }
+    else { w++; neg += test.neg; }
   }
-  var net=pos-neg, att=c+w;
-  var acc=att>0?((c/att)*100).toFixed(1):0;
-  var pct=test.total>0?((net/test.total)*100).toFixed(1):0;
-  var speed=taken>0?(att/(taken/60)).toFixed(2):0;
+  var net = pos - neg, att = c + w;
+  var acc = att > 0 ? ((c / att) * 100).toFixed(1) : 0;
+  var pct = test.total > 0 ? ((net / test.total) * 100).toFixed(1) : 0;
+  var speed = taken > 0 ? (att / (taken / 60)).toFixed(2) : 0;
 
-  $('resultName').textContent=test.name;
-  $('rScore').textContent=net.toFixed(2);
-  $('rOutOf').textContent='out of '+test.total.toFixed(1);
-  $('rPct').textContent=pct+'%';
-  $('rC').textContent=c; $('rW').textContent=w;
-  $('rU').textContent=u; $('rA').textContent=att;
-  $('rPos').textContent='+'+pos.toFixed(2);
-  $('rNeg').textContent='-'+neg.toFixed(2);
-  $('rUn').textContent=u;
-  $('rNet').textContent=net.toFixed(2);
-  $('rAcc').textContent=acc+'%';
-  $('rSpeed').textContent=speed+' q/min';
-  $('rTime').textContent=fmtHMS(taken);
+  $('resultName').textContent = test.name;
+  $('rScore').textContent = net.toFixed(2);
+  $('rOutOf').textContent = 'out of ' + test.total.toFixed(1);
+  $('rPct').textContent = pct + '%';
+  $('rC').textContent = c; 
+  $('rW').textContent = w;
+  $('rU').textContent = u; 
+  $('rA').textContent = att;
+  $('rPos').textContent = '+' + pos.toFixed(2);
+  $('rNeg').textContent = '-' + neg.toFixed(2);
+  $('rUn').textContent = u;
+  $('rNet').textContent = net.toFixed(2);
+  $('rAcc').textContent = acc + '%';
+  $('rSpeed').textContent = speed + ' q/min';
+  $('rTime').textContent = fmtHMS(taken);
 
-  // FIX #4: Handle negative score circle degrees
-  var scoreDeg=0;
-  if(net>0){
-    scoreDeg=Math.min((net/test.total)*360, 360);
+  var scoreDeg = 0;
+  if(net > 0){
+    scoreDeg = Math.min((net / test.total) * 360, 360);
   }
-  $('scoreCircle').style.setProperty('--score-deg', scoreDeg+'deg');
+  $('scoreCircle').style.setProperty('--score-deg', scoreDeg + 'deg');
 
-  // FIX #15: Add grade calculation
-  var grade='F';
-  var pctNum=parseFloat(pct);
-  if(pctNum>=90) grade='S';
-  else if(pctNum>=80) grade='A';
-  else if(pctNum>=70) grade='B';
-  else if(pctNum>=60) grade='C';
-  else if(pctNum>=50) grade='D';
-  else if(pctNum>=40) grade='E';
-  $('rGrade').textContent='Grade: '+grade;
+  var grade = 'F';
+  var pctNum = parseFloat(pct);
+  if(pctNum >= 90) grade = 'S';
+  else if(pctNum >= 80) grade = 'A';
+  else if(pctNum >= 70) grade = 'B';
+  else if(pctNum >= 60) grade = 'C';
+  else if(pctNum >= 50) grade = 'D';
+  else if(pctNum >= 40) grade = 'E';
+  $('rGrade').textContent = 'Grade: ' + grade;
 
-  $('testHeader').style.display='none';
-  $('mainContainer').style.display='none';
-  $('navBar').style.display='none';
+  $('testHeader').style.display = 'none';
+  $('mainContainer').style.display = 'none';
+  $('navBar').style.display = 'none';
   $('resultScreen').classList.add('show');
 }
 
 function reviewTest(){
-  reviewMode=true; qIdx=0;
+  reviewMode = true; 
+  qIdx = 0;
   $('resultScreen').classList.remove('show');
-  $('testHeader').style.display='flex';
-  $('mainContainer').style.display='flex';
-  $('navBar').style.display='flex';
-  $('headerName').textContent=test.name+' - REVIEW';
+  $('testHeader').style.display = 'flex';
+  $('mainContainer').style.display = 'flex';
+  $('navBar').style.display = 'flex';
+  $('headerName').textContent = test.name + ' - REVIEW';
+  $('timerBox').style.display = 'none';
 
-  // FIX #11: Hide timers in review mode
-  $('timerBox').style.display='none';
-
-  renderQ(); updateGrid();
+  renderQ(); 
+  updateGrid();
 }
 
 function goHome(){
-  stopTimers(); reviewMode=false; test=null;
+  stopTimers(); 
+  stopAutoSave();
+  reviewMode = false; 
+  test = null;
   $('warningOverlay').classList.remove('show');
   $('resultScreen').classList.remove('show');
-  $('testHeader').style.display='none';
-  $('mainContainer').style.display='none';
-  $('navBar').style.display='none';
+  $('testHeader').style.display = 'none';
+  $('mainContainer').style.display = 'none';
+  $('navBar').style.display = 'none';
   $('setupScreen').classList.remove('hidden');
   renderTests();
   switchTab('saved');
 }
 
-// FIX #19: Enhanced export with more formats
 function downloadResult(){
-  var taken=Math.floor((Date.now()-startTime)/1000);
-  var c=0,w=0,u=0, pos=0, neg=0;
-  for(var i=0;i<test.qs.length;i++){
-    var a=answers[i], qa=test.qs[i].ans;
+  var taken = Math.floor((Date.now() - startTime) / 1000);
+  var c = 0, w = 0, u = 0, pos = 0, neg = 0;
+  for(var i = 0; i < test.qs.length; i++){
+    var a = answers[i], qa = test.qs[i].ans;
     if(!a) u++;
-    else if(a===qa){ c++; pos+=test.marks; }
-    else { w++; neg+=test.neg; }
+    else if(a === qa){ c++; pos += test.marks; }
+    else { w++; neg += test.neg; }
   }
-  var net=pos-neg;
-  var acc=(c+w)>0?((c/(c+w))*100).toFixed(1):0;
+  var net = pos - neg;
+  var acc = (c + w) > 0 ? ((c / (c + w)) * 100).toFixed(1) : 0;
 
-  var result={
-    app:'NDA Pro Ultimate v4.0',
-    exportedAt:new Date().toISOString(),
-    testName:test.name,
-    subject:test.subject,
-    paper:test.paper,
-    totalQuestions:test.qs.length,
-    correct:c, wrong:w, unattempted:u,
-    positiveMarks:pos.toFixed(2),
-    negativeMarks:neg.toFixed(2),
-    netScore:net.toFixed(2),
-    maxScore:test.total.toFixed(1),
-    percentage:test.total>0?((net/test.total)*100).toFixed(2):0,
-    accuracy:acc,
-    timeTaken:fmtHMS(taken),
-    perQuestionTime:qTimes,
-    flaggedQuestions:(function(){ var f=[]; for(var i=0;i<flags.length;i++) if(flags[i]) f.push(i+1); return f; })(),
-    answers:test.qs.map(function(q,idx){
+  var result = {
+    app: 'NDA Pro Ultimate v6.0',
+    exportedAt: new Date().toISOString(),
+    testName: test.name,
+    subject: test.subject,
+    paper: test.paper,
+    totalQuestions: test.qs.length,
+    correct: c, 
+    wrong: w, 
+    unattempted: u,
+    positiveMarks: pos.toFixed(2),
+    negativeMarks: neg.toFixed(2),
+    netScore: net.toFixed(2),
+    maxScore: test.total.toFixed(1),
+    percentage: test.total > 0 ? ((net / test.total) * 100).toFixed(2) : 0,
+    accuracy: acc,
+    timeTaken: fmtHMS(taken),
+    perQuestionTime: qTimes,
+    flaggedQuestions: (function(){ 
+      var f = []; 
+      for(var i = 0; i < flags.length; i++){
+        if(flags[i]) f.push(i + 1); 
+      } 
+      return f; 
+    })(),
+    answers: test.qs.map(function(q, idx){
       return{
-        qNum:idx+1,
-        question:q.text,
-        yourAnswer:answers[idx]||null,
-        correctAnswer:q.ans,
-        isCorrect:answers[idx]===q.ans,
-        timeSpent:qTimes[idx],
-        solution:q.sol
+        qNum: idx + 1,
+        question: q.text,
+        yourAnswer: answers[idx] || null,
+        correctAnswer: q.ans,
+        isCorrect: answers[idx] === q.ans,
+        timeSpent: qTimes[idx],
+        solution: q.sol
       };
     })
   };
 
-  var blob=new Blob([JSON.stringify(result,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='NDA_Result_'+test.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.json';
+  var blob = new Blob([JSON.stringify(result, null, 2)], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'NDA_Result_' + test.name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.json';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1477,78 +1662,51 @@ function downloadResult(){
   toast('&#128229; Result exported!');
 }
 
-function showConfirm(title,msg,cb){
-  $('cTitle').textContent=title;
-  $('cMsg').textContent=msg;
+function showConfirm(title, msg, cb){
+  $('cTitle').textContent = title;
+  $('cMsg').textContent = msg;
   $('confirmBox').classList.add('show');
-  cBack=cb;
-  $('cYes').onclick=function(){ hideConfirm(); if(cBack) cBack(); };
+  cBack = cb;
+  $('cYes').onclick = function(){ hideConfirm(); if(cBack) cBack(); };
 }
-function hideConfirm(){ $('confirmBox').classList.remove('show'); cBack=null; }
 
-// Enhanced keyboard shortcuts
-// FIX: Support multi-select with keyboard
-var keyMap={};
-document.addEventListener('keydown',function(e){
+function hideConfirm(){ 
+  $('confirmBox').classList.remove('show'); 
+  cBack = null; 
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e){
   if(!test || !$('setupScreen').classList.contains('hidden')) return;
 
-  // Prevent default for our shortcuts
-  if(['ArrowRight','ArrowLeft','1','2','3','4','f','F','Escape'].indexOf(e.key)>=0){
-    // Don't prevent if typing in calculator
+  if(['ArrowRight','ArrowLeft','1','2','3','4','f','F','Escape'].indexOf(e.key) >= 0){
     if($('calcOverlay').classList.contains('show')) return;
     e.preventDefault();
   }
 
-  if(e.key==='ArrowRight'||e.key==='n'||e.key==='N') nextQ();
-  if(e.key==='ArrowLeft'||e.key==='p'||e.key==='P') prevQ();
-  if(e.key==='1') pickOpt('A'); 
-  if(e.key==='2') pickOpt('B');
-  if(e.key==='3') pickOpt('C'); 
-  if(e.key==='4') pickOpt('D');
-  if(e.key==='f'||e.key==='F') toggleFlag();
-  if(e.key==='Escape') toggleCalc();
+  if(e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') nextQ();
+  if(e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') prevQ();
+  if(e.key === '1') pickOpt('A'); 
+  if(e.key === '2') pickOpt('B');
+  if(e.key === '3') pickOpt('C'); 
+  if(e.key === '4') pickOpt('D');
+  if(e.key === 'f' || e.key === 'F') toggleFlag();
+  if(e.key === 'Escape') toggleCalc();
 });
 
-// FIX #28: Auto-detect OS theme on load
-window.onload=function(){ 
+// ===== ON LOAD: Check for resume =====
+window.onload = function(){ 
   loadTheme();
   loadStore();
   loadSettingsStore();
   selectPaper('math'); 
 
-  // Check for resumeable progress
-  var progress=loadProgress();
-  if(progress && progress.testId){
-    // Find the test
-    for(var i=0;i<tests.length;i++){
-      if(tests[i].id===progress.testId){
-        showConfirm('Resume Test?','You have an incomplete test: '+tests[i].name+'. Resume from where you left off?',function(){
-          test=tests[i];
-          qIdx=progress.qIdx;
-          answers=progress.answers;
-          flags=progress.flags||[];
-          qTimes=progress.qTimes||[];
-          tTime=progress.tTime;
-          startTime=progress.startTime;
-          reviewMode=false;
-          warned5=false; warned1=false;
-
-          $('setupScreen').classList.add('hidden');
-          $('testHeader').style.display='flex';
-          $('mainContainer').style.display='flex';
-          $('navBar').style.display='flex';
-          $('headerName').textContent=test.name;
-          $('headerName').title=test.name;
-          $('headerSubject').textContent=test.paper==='math'?'MATHEMATICS':'GAT';
-          $('qCounterTotal').textContent=test.qs.length;
-          $('timerBox').style.display='flex';
-
-          renderQ(); renderGrid(); startTimers();
-          setInterval(saveProgress, 30000);
-        });
-        break;
-      }
-    }
+  // Check for resumable progress
+  var progress = loadProgress();
+  if(progress && progress.testData){
+    setTimeout(function(){
+      showResumeDialog(progress);
+    }, 500);
   }
 };
 </script>
