@@ -483,6 +483,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   <div style="display:flex;align-items:center;gap:8px">
     <button class="flag-btn-nav" id="flagBtn" onclick="toggleFlag()" title="Flag for Review">&#128681;</button>
     <button class="calc-btn-nav" onclick="toggleCalc()" title="Calculator">&#128425;</button>
+    <button class="nav-btn" style="background:var(--danger);color:#fff;border:none;font-size:12px;padding:8px 16px;" onclick="exitTest()" title="Exit Test">&#10060; Exit</button>
     <button class="nav-btn primary" id="nextBtn" onclick="nextQ()">Next &#8594;</button>
   </div>
 </div>
@@ -565,10 +566,21 @@ function toast(msg, type){
   setTimeout(function(){t.classList.remove('show');},2500);
 }
 function esc(t){ 
+  if(!t) return '';
   var d=document.createElement('div'); 
   d.textContent=t; 
   return d.innerHTML; 
 }
+
+// escLatex: converts LaTeX to readable text for DISPLAY only (not for parser)
+function escLatex(t){
+  if(!t) return '';
+  t = convertLatex(t);
+  var d=document.createElement('div');
+  d.textContent=t;
+  return d.innerHTML;
+}
+
 function fmtMMSS(s){ var m=Math.floor(s/60), sec=s%60; return (m<10?'0':'')+m+':'+(sec<10?'0':'')+sec; }
 function fmtHMS(s){ 
   var h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60; 
@@ -577,6 +589,148 @@ function fmtHMS(s){
 
 // ===== THEME SYSTEM =====
 var currentTheme='dark';
+
+// ===== SIMPLE LATEX CONVERTER =====
+// Converts common LaTeX commands to readable text
+// Uses basic string replacement - no complex regex
+
+function convertLatex(text) {
+  if(!text) return text;
+
+  // Fractions: \frac{a}{b} -> a/b
+  // Handle nested by repeating
+  for(var i = 0; i < 5; i++) {
+    var newText = text.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, function(match, num, den) {
+      return '(' + num + ')/(' + den + ')';
+    });
+    if(newText === text) break;
+    text = newText;
+  }
+
+  // Square root: \sqrt{x} -> sqrt(x)
+  text = text.replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)');
+  text = text.replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, 'root-$1-of-$2');
+
+  // Subscripts: x_1 -> x1, x_{12} -> x12
+  text = text.replace(/([a-zA-Z0-9])_\{([^}]+)\}/g, '$1[$2]');
+  text = text.replace(/([a-zA-Z0-9])_([a-zA-Z0-9])/g, '$1[$2]');
+
+  // Superscripts: x^2 -> x^2, x^{n} -> x^n
+  text = text.replace(/([a-zA-Z0-9)])\^\{([^}]+)\}/g, '$1^($2)');
+  text = text.replace(/([a-zA-Z0-9)])\^([a-zA-Z0-9])/g, '$1^$2');
+
+  // Greek letters (lowercase)
+  var greekLower = {
+    '\\alpha': 'alpha', '\\beta': 'beta', '\\gamma': 'gamma', '\\delta': 'delta',
+    '\\epsilon': 'epsilon', '\\zeta': 'zeta', '\\eta': 'eta', '\\theta': 'theta',
+    '\\iota': 'iota', '\\kappa': 'kappa', '\\lambda': 'lambda', '\\mu': 'mu',
+    '\\nu': 'nu', '\\xi': 'xi', '\\pi': 'pi', '\\rho': 'rho',
+    '\\sigma': 'sigma', '\\tau': 'tau', '\\upsilon': 'upsilon', '\\phi': 'phi',
+    '\\chi': 'chi', '\\psi': 'psi', '\\omega': 'omega'
+  };
+
+  // Greek letters (uppercase)
+  var greekUpper = {
+    '\\Alpha': 'Alpha', '\\Beta': 'Beta', '\\Gamma': 'Gamma', '\\Delta': 'Delta',
+    '\\Epsilon': 'Epsilon', '\\Zeta': 'Zeta', '\\Eta': 'Eta', '\\Theta': 'Theta',
+    '\\Iota': 'Iota', '\\Kappa': 'Kappa', '\\Lambda': 'Lambda', '\\Mu': 'Mu',
+    '\\Nu': 'Nu', '\\Xi': 'Xi', '\\Pi': 'Pi', '\\Rho': 'Rho',
+    '\\Sigma': 'Sigma', '\\Tau': 'Tau', '\\Upsilon': 'Upsilon', '\\Phi': 'Phi',
+    '\\Chi': 'Chi', '\\Psi': 'Psi', '\\Omega': 'Omega'
+  };
+
+  // Math operators
+  var operators = {
+    '\\times': 'x', '\\div': '/', '\\pm': '+-', '\\leq': '<=',
+    '\\geq': '>=', '\\neq': '!=', '\\equiv': '==', '\\approx': '~',
+    '\\propto': 'prop-to', '\\cdot': '*', '\\in': 'in',
+    '\\subset': 'subset', '\\supset': 'supset', '\\subseteq': 'subeq',
+    '\\supseteq': 'supeq', '\\cup': 'union', '\\cap': 'intersect',
+    '\\infty': 'infinity', '\\partial': 'd', '\\nabla': 'grad',
+    '\\angle': 'angle', '\\perp': 'perp', '\\parallel': '||',
+    '\\sim': '~', '\\cong': '~=', '\\to': '->', '\\rightarrow': '->',
+    '\\leftarrow': '<-', '\\uparrow': '^', '\\downarrow': 'v',
+    '\\leftrightarrow': '<->', '\\Rightarrow': '=>', '\\Leftarrow': '<=',
+    '\\Leftrightarrow': '<=>', '\\implies': '=>', '\\iff': '<=>',
+    '\\mapsto': '|->', '\\forall': 'for-all', '\\exists': 'exists',
+    '\\neg': 'not', '\\wedge': 'and', '\\vee': 'or', '\\oplus': '(+)',
+    '\\otimes': '(x)', '\\odot': '(.)', '\\sum': 'SUM', '\\prod': 'PROD',
+    '\\int': 'INT', '\\oint': 'OINT', '\\sqrt': 'sqrt', '\\ldots': '...',
+    '\\cdots': '...', '\\dots': '...', '\\quad': ' ', '\\qquad': '  '
+  };
+
+  // Apply all replacements
+  for(var key in greekLower) {
+    text = text.split(key).join(greekLower[key]);
+  }
+  for(var key in greekUpper) {
+    text = text.split(key).join(greekUpper[key]);
+  }
+  for(var key in operators) {
+    text = text.split(key).join(operators[key]);
+  }
+
+  // Remove LaTeX wrappers
+  var wrappers = ['\\text', '\\mathrm', '\\mathbf', '\\mathit', '\\textbf', '\\textit', '\\operatorname'];
+  for(var i = 0; i < wrappers.length; i++) {
+    var re = new RegExp(wrappers[i] + '\{([^}]+)\}', 'g');
+    text = text.replace(re, '$1');
+  }
+
+  // Remove brackets and delimiters
+  text = text.split('\\left').join('');
+  text = text.split('\\right').join('');
+  text = text.split('\\bigl').join('');
+  text = text.split('\\bigr').join('');
+  text = text.split('\\Bigl').join('');
+  text = text.split('\\Bigr').join('');
+  text = text.split('\\biggl').join('');
+  text = text.split('\\biggr').join('');
+  text = text.split('\\Biggl').join('');
+  text = text.split('\\Biggr').join('');
+  text = text.split('\\big').join('');
+  text = text.split('\\Big').join('');
+  text = text.split('\\bigg').join('');
+  text = text.split('\\Bigg').join('');
+
+  // Remove absolute value bars
+  text = text.split('\\lvert').join('|');
+  text = text.split('\\rvert').join('|');
+  text = text.split('\\lVert').join('||');
+  text = text.split('\\rVert').join('||');
+  text = text.split('\\vert').join('|');
+  text = text.split('\\Vert').join('||');
+
+  // Remove other LaTeX commands
+  text = text.split('\\displaystyle').join('');
+  text = text.split('\\textstyle').join('');
+  text = text.split('\\scriptstyle').join('');
+  text = text.split('\\scriptscriptstyle').join('');
+  text = text.split('\\nonumber').join('');
+  text = text.split('\\notag').join('');
+  text = text.split('\\[').join('');
+  text = text.split('\\]').join('');
+  text = text.split('\\{').join('');
+  text = text.split('\\}').join('');
+  text = text.split('\\(').join('');
+  text = text.split('\\)').join('');
+  text = text.split('\\,').join('');
+  text = text.split('\\;').join('');
+  text = text.split('\\!').join('');
+  text = text.split('\\ ').join('');
+
+  // Remove begin/end environments
+  text = text.replace(/\\begin\{[^}]*\}/g, '');
+  text = text.replace(/\\end\{[^}]*\}/g, '');
+  text = text.replace(/\\tag\{[^}]*\}/g, '');
+
+  // Clean up multiple spaces and newlines
+  text = text.replace(/ {2,}/g, ' ');
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  return text.trim();
+}
+
 function toggleTheme(){
   currentTheme=currentTheme==='dark'?'light':'dark';
   document.documentElement.setAttribute('data-theme', currentTheme);
@@ -691,7 +845,7 @@ function hideValidation(){
 
 function validateTest(qs, name){
   if(!name.trim()){ showValidation('Test name is required!','err'); return false; }
-  if(qs.length===0){ showValidation('No valid questions found! Check format.','err'); return false; }
+  if(qs.length===0){ showValidation('No valid questions found! Make sure questions start with Q1., Q2., 1., 2., etc. Each option should start with A), B), C), D) or (A), (B), etc.','err'); return false; }
 
   var seenNums={};
   var hasDup=false;
@@ -718,139 +872,302 @@ function validateTest(qs, name){
   return true;
 }
 
-// ===== COMPLETELY REWRITTEN NDA PARSER =====
-// This parser uses a state machine approach to properly handle:
-// - Multi-line question text
-// - Assertion-Reason questions
-// - Statement-based questions  
-// - Match the following
-// - Table questions
-// - Multi-line options
+// ===== NDA QUESTION PARSER v2.0 - Production Ready =====
+// Handles all real NDA formats: Standard MCQ, Fill Blank, Assertion-Reason,
+// Match List, Statement Based, Sentence Rearrange, Comprehension,
+// Vocabulary, Direct/Indirect, Active/Passive, Bilingual Hindi+English
 
-function parseQuestions(text){
-  var lines = text.split('\n');
-  var questions = [];
-  var currentQ = null;
-  var state = 'IDLE'; // IDLE, IN_QUESTION, IN_OPTIONS
-  var qTextBuffer = [];
-  var lastOptLetter = '';
+var QTYPE = {
+  STANDARD_MCQ: "standard_mcq",
+  FILL_BLANK: "fill_blank",
+  ASSERTION_REASON: "assertion_reason",
+  MATCH_LIST: "match_list",
+  STATEMENT_BASED: "statement_based",
+  SENTENCE_REARRANGE: "sentence_rearrange",
+  COMPREHENSION: "comprehension",
+  VOCABULARY: "vocabulary",
+  DIRECT_INDIRECT: "direct_indirect",
+  ACTIVE_PASSIVE: "active_passive",
+  UNKNOWN: "unknown"
+};
 
-  function isQuestionStart(line){
-    // Match: Q1., Q2:, 1., 2:, Question 1, etc.
-    return /^(?:Q\s*\d+|Question\s+\d+|\d+)[\.:\s]/i.test(line.trim());
-  }
+var NDAQuestionParser = {
+  // Question start: number followed by . or ) and space/text
+  // Handles: "1.", "1)", "Q.1", "Q1.", "Question 1."
+  qStart: /^\s*(?:Q\.?\s*)?(\d+)[\.\)\:\s]\s*(.*)$/i,
 
-  function extractQNum(line){
-    var m = line.trim().match(/^(?:Q\s*(\d+)|Question\s+(\d+)|(\d+))[\.:\s]/i);
-    if(m) return parseInt(m[1]||m[2]||m[3]);
-    return null;
-  }
+  // Option patterns (all variants from real papers)
+  optParen: /^\s*\(([a-dA-D])\)\s*(.*)$/,      // (a) text
+  optLetter: /^\s*([a-dA-D])\)\s*(.*)$/,           // a) text
+  optCapital: /^\s*([A-D])\)\s*(.*)$/,             // A) text
+  optNumber: /^\s*(\d)[\.\)]\s*(.*)$/,            // 1. text
 
-  function extractQText(line){
-    var m = line.trim().match(/^(?:Q\s*\d+|Question\s+\d+|\d+)[\.:\s]+(.+)/i);
-    return m ? m[1].trim() : '';
-  }
+  // Hindi detection - Devanagari range U+0900 to U+097F
+  hindi: /[\u0900-\u097F]/,
 
-  function isOptionLine(line){
-    var trimmed = line.trim();
-    // STRICT: Must start with A-D followed by ) or . or space+text
-    // But NOT just "A is true" - must have ) or . after letter
-    return /^[A-D][\.\)]\s*/i.test(trimmed);
-  }
+  // Question type detection patterns
+  patterns: {
+    fill_blank: /_{3,}|\.{3,}|\(blank\)/i,
+    assertion_reason: /Assertion\s*\(?A\)?[\:\s].*?Reason\s*\(?R\)?[\:\s]/i,
+    match_list: /(?:Match\s+(?:List[-\s]?I|the\s+following)|List[-\s]?I\s+with\s+List[-\s]?II)/i,
+    statement_based: /(?:Consider\s+the\s+following\s+statements?|Which\s+of\s+the\s+(?:following|above))/i,
+    sentence_rearrange: /(?:jumbled|rearranged?|sequence|order).*?(?:P\s*,?\s*Q\s*,?\s*R\s*,?\s*S|sentences?\s+(?:have\s+been|are)\s+(?:jumbled|labelled))/i,
+    comprehension: /(?:Read\s+the\s+following\s+passage|passage\s+carefully|based\s+on\s+the\s+passage)/i,
+    vocabulary: /(?:meaning\s+of|synonym|antonym|correct\s+meaning|identify\s+the\s+meaning)/i,
+    direct_indirect: /(?:direct\s+speech|indirect\s+speech|Convert\s+from)/i,
+    active_passive: /(?:active\s+voice|passive\s+voice)/i
+  },
 
-  function extractOption(line){
-    var m = line.trim().match(/^([A-D])[\.\)]\s*(.*)/i);
-    if(m) return {let: m[1].toUpperCase(), txt: m[2].trim()};
-    return null;
-  }
+  normalize: function(label) {
+    label = label.trim().toLowerCase();
+    var map = {'1':'a','2':'b','3':'c','4':'d'};
+    return map[label] || label;
+  },
 
-  function flushQuestion(){
-    if(currentQ){
-      // Join question text with newlines to preserve formatting
-      currentQ.text = qTextBuffer.join('\n').trim();
-      if(currentQ.text || currentQ.opts.length > 0){
-        questions.push(currentQ);
+  clean: function(text) {
+    // OCR cleanup
+    var fixes = [
+      [/\x00-\x08\x0b\x0c\x0e-\x1f\x7f/g, ''],  // control chars
+      [/\n{3,}/g, '\n\n'],                           // excessive newlines
+      [/ {2,}/g, ' '],                                   // multiple spaces
+      [/\u2018|\u2019/g, "'"],                         // smart quotes
+      [/\u201C|\u201D/g, '"'],                         // smart double quotes
+      [/\u2013|\u2014/g, '-'],                        // em/en dash
+      [/\s+\)/g, ')'],                                 // space before )
+      [/\(\s+/g, '(']                                  // space after (
+    ];
+    for(var i = 0; i < fixes.length; i++){
+      text = text.replace(fixes[i][0], fixes[i][1]);
+    }
+    return text.trim();
+  },
+
+  splitBilingual: function(text) {
+    // Split Hindi and English parts
+    var lines = text.split('\n');
+    var eng = [], hindi = [];
+    for(var i = 0; i < lines.length; i++){
+      if(this.hindi.test(lines[i])){
+        hindi.push(lines[i]);
+      } else {
+        eng.push(lines[i]);
       }
     }
-  }
+    var e = eng.join(' ').trim();
+    var h = hindi.length > 0 ? hindi.join(' ').trim() : null;
+    return [e, h];
+  },
 
-  for(var i = 0; i < lines.length; i++){
-    var line = lines[i];
-    var trimmed = line.trim();
+  detectType: function(text) {
+    // Detect question type from content
+    for(var key in this.patterns){
+      if(this.patterns[key].test(text)){
+        return key;
+      }
+    }
+    return QTYPE.STANDARD_MCQ;
+  },
 
-    if(!trimmed){
-      // Empty line - if in options, might be multi-line option separator
-      // If in question, preserve as paragraph break
-      if(state === 'IN_QUESTION'){
-        qTextBuffer.push(''); // empty line in question text
-      } else if(state === 'IN_OPTIONS' && currentQ && currentQ.opts.length > 0){
-        // Could be multi-line option - add empty line to last option
-        // But only if next line is not a new option or question
-        if(i + 1 < lines.length){
-          var nextTrim = lines[i+1].trim();
-          if(nextTrim && !isOptionLine(nextTrim) && !isQuestionStart(nextTrim)){
-            currentQ.opts[currentQ.opts.length-1].txt += '\n';
-          }
+  isOptionLine: function(line) {
+    // Check if line is an option
+    var pats = [this.optParen, this.optLetter, this.optCapital, this.optNumber];
+    for(var i = 0; i < pats.length; i++){
+      var m = pats[i].exec(line);
+      if(m){
+        return [true, m[1], m[2]];
+      }
+    }
+    return [false, '', ''];
+  },
+
+  hasInlineOptions: function(line) {
+    // Check if line contains multiple inline options like (a) (b) (c) (d)
+    var markers = line.match(/(?:^|\s)\(([a-dA-D])\)/g);
+    if(markers && markers.length >= 2) return true;
+    // Try a) b) format
+    markers = line.match(/(?:^|\s)([a-dA-D])\)/g);
+    return markers && markers.length >= 2;
+  },
+
+  splitInlineOptions: function(line) {
+    // Split inline options into separate lines
+    var reParen = /(?:^|\s)\(([a-dA-D])\)/g;
+    var markers = [];
+    var m;
+    while((m = reParen.exec(line)) !== null){
+      markers.push({index: m.index, label: m[1]});
+    }
+    if(markers.length < 2){
+      // Try a) b) format
+      var reLetter = /(?:^|\s)([a-dA-D])\)/g;
+      markers = [];
+      while((m = reLetter.exec(line)) !== null){
+        markers.push({index: m.index, label: m[1]});
+      }
+      if(markers.length < 2) return [line];
+    }
+
+    var parts = [];
+    for(var i = 0; i < markers.length; i++){
+      var start = markers[i].index;
+      var end = (i + 1 < markers.length) ? markers[i + 1].index : line.length;
+      parts.push(line.substring(start, end).trim());
+    }
+    return parts;
+  },
+
+  findQuestionStarts: function(lines) {
+    // Find all question start positions
+    var positions = [];
+    var prevQNum = 0;
+
+    for(var idx = 0; idx < lines.length; idx++){
+      var lineStripped = lines[idx].trim();
+      if(!lineStripped) continue;
+
+      var m = this.qStart.exec(lineStripped);
+      if(m){
+        var qNum = parseInt(m[1]);
+        var textAfter = m[2].trim();
+
+        // Skip if number is not sequential (might be statement item)
+        if(qNum < prevQNum && prevQNum > 0){
+          var words = textAfter.split(/\s+/);
+          if(words.length <= 3) continue;
         }
+
+        // Skip very short statement items like "1. Earth is round."
+        var words = textAfter.split(/\s+/);
+        if(words.length <= 4 && qNum <= 4 && prevQNum > 0){
+          continue;
+        }
+
+        positions.push([idx, qNum]);
+        prevQNum = qNum;
       }
-      continue;
     }
+    return positions;
+  },
 
-    if(isQuestionStart(trimmed)){
-      // New question starts
-      flushQuestion();
+  preprocessBlock: function(blockLines) {
+    // Pre-process: split inline options, clean up
+    var result = [];
+    for(var i = 0; i < blockLines.length; i++){
+      var line = blockLines[i].trim();
+      if(!line) continue;
 
-      var qNum = extractQNum(trimmed);
-      var qText = extractQText(trimmed);
+      // Check if this line has inline options AND is not a question start
+      if(this.hasInlineOptions(line) && !this.qStart.test(line)){
+        var parts = this.splitInlineOptions(line);
+        for(var j = 0; j < parts.length; j++){
+          result.push(parts[j]);
+        }
+      } else {
+        result.push(line);
+      }
+    }
+    return result;
+  },
 
-      currentQ = {
+  parse: function(rawText, subject) {
+    subject = subject || "unknown";
+    var text = this.clean(rawText);
+    var lines = text.split('\n');
+
+    // Find question boundaries
+    var qPositions = this.findQuestionStarts(lines);
+
+    var questions = [];
+
+    for(var i = 0; i < qPositions.length; i++){
+      var startIdx = qPositions[i][0];
+      var qNum = qPositions[i][1];
+
+      // Determine end
+      var endIdx = (i + 1 < qPositions.length) ? qPositions[i + 1][0] : lines.length;
+
+      // Extract and pre-process block
+      var blockLines = lines.slice(startIdx, endIdx);
+      blockLines = this.preprocessBlock(blockLines);
+
+      if(blockLines.length === 0) continue;
+
+      // Extract question text from first line
+      var firstLine = blockLines[0];
+      var m = this.qStart.exec(firstLine);
+      var qText = m ? m[2].trim() : firstLine;
+
+      // Collect question text until first option
+      var qTextLines = [qText];
+      var optStartIdx = 1;
+
+      for(var j = 1; j < blockLines.length; j++){
+        var line = blockLines[j].trim();
+        if(!line) continue;
+
+        var isOpt = this.isOptionLine(line);
+        if(isOpt[0]){
+          optStartIdx = j;
+          break;
+        }
+        qTextLines.push(line);
+      }
+
+      var fullQ = qTextLines.join(' ').trim();
+      var bilingual = this.splitBilingual(fullQ);
+      var eng = bilingual[0];
+      var hindi = bilingual[1];
+      var qType = this.detectType(fullQ);
+
+      var question = {
         num: qNum,
-        text: '',
+        rawText: fullQ,
+        text: eng || fullQ,
+        hindi: hindi,
+        qType: qType,
+        subject: subject,
         opts: [],
         ans: '',
         sol: ''
       };
-      qTextBuffer = qText ? [qText] : [];
-      state = 'IN_QUESTION';
-      lastOptLetter = '';
-      continue;
-    }
 
-    if(!currentQ){
-      // Lines before first question - skip
-      continue;
-    }
+      // Parse options
+      var options = [];
+      var currentOpt = null;
 
-    if(isOptionLine(trimmed)){
-      var opt = extractOption(trimmed);
-      if(opt){
-        state = 'IN_OPTIONS';
-        currentQ.opts.push(opt);
-        lastOptLetter = opt.let;
+      for(var j = optStartIdx; j < blockLines.length; j++){
+        var line = blockLines[j].trim();
+        if(!line) continue;
+
+        var optResult = this.isOptionLine(line);
+
+        if(optResult[0]){
+          if(currentOpt){
+            options.push(currentOpt);
+          }
+          currentOpt = {
+            let: this.normalize(optResult[1]),
+            rawLabel: optResult[1],
+            txt: optResult[2]
+          };
+        } else if(currentOpt !== null){
+          currentOpt.txt += ' ' + line;
+        }
       }
-    } else if(state === 'IN_OPTIONS'){
-      // Multi-line option continuation
-      if(currentQ.opts.length > 0){
-        currentQ.opts[currentQ.opts.length-1].txt += '\n' + trimmed;
+
+      if(currentOpt){
+        options.push(currentOpt);
       }
-    } else {
-      // Still in question body
-      qTextBuffer.push(trimmed);
+
+      question.opts = options;
+      questions.push(question);
     }
+
+    return questions;
   }
+};
 
-  // Flush last question
-  flushQuestion();
-
-  // Sort by question number and re-index sequentially
-  questions.sort(function(a,b){ return a.num - b.num; });
-  for(var i = 0; i < questions.length; i++){
-    questions[i].num = i + 1;
-  }
-
-  return questions;
-}
-
+// ===== ANSWER PARSER =====
 function parseAnswers(text, count){
   var ans = [];
   var lines = text.split('\n');
@@ -874,6 +1191,7 @@ function parseAnswers(text, count){
   return ans;
 }
 
+// ===== SOLUTION PARSER =====
 function parseSolutions(text, count){
   var sols = [];
   var lines = text.split('\n');
@@ -892,8 +1210,9 @@ function parseSolutions(text, count){
   return sols;
 }
 
+// ===== BUILD TEST =====
 function buildTest(name, qText, aText, sText){
-  var qs = parseQuestions(qText);
+  var qs = NDAQuestionParser.parse(qText);
   if(qs.length === 0){ showValidation('No valid questions found! Check your format.','err'); return null; }
 
   var ans = parseAnswers(aText, qs.length);
@@ -923,7 +1242,6 @@ function buildTest(name, qText, aText, sText){
     date: new Date().toLocaleDateString()
   };
 }
-
 function saveTest(){
   var name = $('testName').value.trim();
   var t = buildTest(name, $('questionsInput').value, $('answersInput').value, $('solutionsInput').value);
@@ -1206,8 +1524,8 @@ function renderQ(){
     var cls = 'option';
     var badge = '';
 
-    var isCorrectAns = q.ans.indexOf(o.let) >= 0;
-    var isUserSelected = userAns && userAns.indexOf(o.let) >= 0;
+    var isCorrectAns = q.ans.toUpperCase().indexOf(o.let.toUpperCase()) >= 0;
+    var isUserSelected = userAns && userAns.toUpperCase().indexOf(o.let.toUpperCase()) >= 0;
 
     if(isReview){
       if(isCorrectAns){ 
@@ -1233,7 +1551,7 @@ function renderQ(){
 
     optsHtml += '<div class="' + cls + '" onclick="pickOpt(\'' + o.let + '\')">' +
       '<span class="option-letter">' + o.let + '</span>' +
-      '<span class="option-text">' + esc(o.txt).replace(/\n/g, '<br>') + '</span>' + badge + '</div>';
+      '<span class="option-text">' + escLatex(o.txt).replace(/\n/g, '<br>') + '</span>' + badge + '</div>';
   }
 
   var solHtml = '';
@@ -1243,7 +1561,7 @@ function renderQ(){
       '<div class="solution-box">' +
       '<div class="solution-label">&#9989; Correct Answer</div>' +
       '<div class="solution-ans">' + q.ans + '</div>' +
-      '<div class="solution-text">' + esc(q.sol) + '</div>' +
+      '<div class="solution-text">' + escLatex(q.sol) + '</div>' +
       '</div></div>';
   }
 
@@ -1252,7 +1570,7 @@ function renderQ(){
     '<div class="q-header">' +
     '<div class="q-badge"><span class="q-num">' + (qIdx + 1) + '</span><span class="q-total">/' + test.qs.length + '</span></div>' +
     '<div class="q-subject">' + pLabel + '</div></div>' +
-    '<div class="question-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>' +
+    '<div class="question-text">' + escLatex(q.text).replace(/\n/g, '<br>') + '</div>' +
     '<div class="options-container">' + optsHtml + '</div>' + solHtml + '</div>';
 
   $('qCounterCurrent').textContent = qIdx + 1;
@@ -1274,15 +1592,14 @@ function renderQ(){
 function pickOpt(letter){
   if(reviewMode) return;
 
-  // Toggle selection
-  if(answers[qIdx].indexOf(letter) >= 0){
-    answers[qIdx] = answers[qIdx].replace(letter, '');
-  } else {
-    answers[qIdx] += letter;
+  // Lock: can't change answer once selected
+  if(answers[qIdx] !== ''){
+    toast('Answer locked! Submit test to change.','warn');
+    return;
   }
-  // Sort letters
-  var sorted = answers[qIdx].split('').sort().join('');
-  answers[qIdx] = sorted;
+
+  letter = letter.toUpperCase();
+  answers[qIdx] = letter;
 
   renderQ(); // Re-render to show instant green/red feedback
   updateGrid(); // Update panel
@@ -1384,7 +1701,7 @@ function updateGrid(){
     var qAns = test.qs[i].ans;
 
     if(ans){
-      if(ans === qAns){ 
+      if(ans.toUpperCase() === qAns.toUpperCase()){ 
         el.classList.add('correct'); 
         c++; 
         marks += test.marks; 
